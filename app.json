@@ -46,7 +46,8 @@
           "microphonePermission": "Allow Thunkd to use the microphone for voice input.",
           "speechRecognitionPermission": "Allow Thunkd to use speech recognition."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "router": {},

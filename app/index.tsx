@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Redirect, router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -12,9 +13,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { type UserInfo, clearAuth, getStoredUserInfo, isAuthenticated } from "../lib/auth";
 import { setErrorHandler, useEmailQueue } from "../lib/email-queue";
-import { type EmailConfig, isConfigured } from "../lib/send-email";
-import { type Settings, getSettings, saveSetting } from "../lib/settings";
 import {
   ExpoSpeechRecognitionModule,
   speechAvailable,
@@ -28,13 +28,11 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const { pendingCount, enqueue } = useEmailQueue();
 
-  // Settings state
-  const [settings, setSettings] = useState<Settings>({ resendApiKey: "", captureEmail: "" });
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  // Auth state
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authed, setAuthed] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState("");
-  const [emailInput, setEmailInput] = useState("");
-  const [saving, setSaving] = useState(false);
 
   // Speech recognition state
   const [recording, setRecording] = useState(false);
@@ -96,10 +94,15 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    getSettings().then((s) => {
-      setSettings(s);
-      setSettingsLoaded(true);
-    });
+    (async () => {
+      const loggedIn = await isAuthenticated();
+      if (loggedIn) {
+        const info = await getStoredUserInfo();
+        setUserInfo(info);
+      }
+      setAuthed(loggedIn);
+      setAuthChecked(true);
+    })();
   }, []);
 
   useEffect(() => {
@@ -107,47 +110,36 @@ export default function HomeScreen() {
     return () => setErrorHandler(null);
   }, []);
 
-  const emailConfig: EmailConfig = {
-    apiKey: settings.resendApiKey,
-    captureEmail: settings.captureEmail,
-  };
-
-  const openSettings = () => {
-    setApiKeyInput(settings.resendApiKey);
-    setEmailInput(settings.captureEmail);
-    setSettingsVisible(true);
-  };
-
-  const handleSaveSettings = async () => {
-    setSaving(true);
-    try {
-      await Promise.all([
-        saveSetting("resendApiKey", apiKeyInput.trim()),
-        saveSetting("captureEmail", emailInput.trim()),
-      ]);
-      const updated: Settings = {
-        resendApiKey: apiKeyInput.trim(),
-        captureEmail: emailInput.trim(),
-      };
-      setSettings(updated);
-      setSettingsVisible(false);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleSend = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !userInfo?.email) return;
     setError(null);
-    enqueue(text.trim(), emailConfig);
+    enqueue(text.trim(), userInfo.email);
     setText("");
     baseTextRef.current = "";
   };
 
+  const handleSignOut = async () => {
+    await clearAuth();
+    setSettingsVisible(false);
+    router.replace("/sign-in");
+  };
+
+  if (!authChecked) {
+    return (
+      <View style={styles.setupContainer}>
+        <ActivityIndicator size="large" color="#000" />
+      </View>
+    );
+  }
+
+  if (!authed) {
+    return <Redirect href="/sign-in" />;
+  }
+
   const gearButton = (
     <Pressable
       style={[styles.gearButton, { top: insets.top + 8, right: 16 }]}
-      onPress={openSettings}
+      onPress={() => setSettingsVisible(true)}
       hitSlop={12}
     >
       <Ionicons name="settings-sharp" size={24} color="#666" />
@@ -165,75 +157,24 @@ export default function HomeScreen() {
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Settings</Text>
 
-          <Text style={styles.label}>Resend API Key</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="re_..."
-            placeholderTextColor="#999"
-            value={apiKeyInput}
-            onChangeText={setApiKeyInput}
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-          />
-
-          <Text style={styles.label}>Capture Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="you@example.com"
-            placeholderTextColor="#999"
-            value={emailInput}
-            onChangeText={setEmailInput}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-          />
+          <Text style={styles.label}>Signed in as</Text>
+          <Text style={styles.emailText}>{userInfo?.email ?? "Unknown"}</Text>
 
           <View style={styles.modalButtons}>
             <Pressable
               style={styles.cancelButton}
               onPress={() => setSettingsVisible(false)}
-              disabled={saving}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>Close</Text>
             </Pressable>
-            <Pressable
-              style={[styles.saveButton, saving && styles.sendButtonDisabled]}
-              onPress={handleSaveSettings}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
-              )}
+            <Pressable style={styles.signOutButton} onPress={handleSignOut}>
+              <Text style={styles.signOutButtonText}>Sign Out</Text>
             </Pressable>
           </View>
         </View>
       </SafeAreaView>
     </Modal>
   );
-
-  if (!settingsLoaded) {
-    return (
-      <View style={styles.setupContainer}>
-        <ActivityIndicator size="large" color="#000" />
-      </View>
-    );
-  }
-
-  if (!isConfigured(emailConfig)) {
-    return (
-      <View style={styles.setupContainer}>
-        {gearButton}
-        <Text style={styles.title}>Setup Required</Text>
-        <Text style={styles.setupText}>
-          Tap the gear icon to add your{"\n"}Resend API key and capture email.
-        </Text>
-        {settingsModal}
-      </View>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -315,17 +256,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 24,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
-  setupText: {
-    fontSize: 15,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 22,
-  },
   textInputWrapper: {
     flex: 1,
     minHeight: 0,
@@ -401,14 +331,10 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 6,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 14,
+  emailText: {
     fontSize: 16,
-    marginBottom: 18,
-    backgroundColor: "#fafafa",
+    color: "#000",
+    marginBottom: 32,
   },
   modalButtons: {
     flexDirection: "row",
@@ -429,15 +355,15 @@ const styles = StyleSheet.create({
     color: "#666",
     fontWeight: "600",
   },
-  saveButton: {
+  signOutButton: {
     flex: 1,
     minHeight: 50,
     borderRadius: 12,
-    backgroundColor: "#000",
+    backgroundColor: "#d00",
     alignItems: "center",
     justifyContent: "center",
   },
-  saveButtonText: {
+  signOutButtonText: {
     fontSize: 16,
     color: "#fff",
     fontWeight: "600",
