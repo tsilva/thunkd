@@ -5,7 +5,8 @@ import {
 } from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { router } from "expo-router";
 import {
   GOOGLE_CLIENT_ID,
@@ -19,6 +20,29 @@ import {
 } from "../lib/auth";
 
 WebBrowser.maybeCompleteAuthSession();
+
+function GoogleLogo({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48">
+      <Path
+        d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
+        fill="#FBBC05"
+      />
+      <Path
+        d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
+        fill="#EA4335"
+      />
+      <Path
+        d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0124 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
+        fill="#34A853"
+      />
+      <Path
+        d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 01-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"
+        fill="#4285F4"
+      />
+    </Svg>
+  );
+}
 
 const redirectUri = makeRedirectUri({
   native: "thunkd://sign-in",
@@ -41,44 +65,31 @@ export default function SignInScreen() {
   );
 
   useEffect(() => {
-    if (request) {
-      console.log("OAuth redirect URI:", request.redirectUri);
-      console.log("OAuth request URL:", request.url);
-    }
-  }, [request]);
-
-  useEffect(() => {
     isAuthenticated().then((authed) => {
       if (authed) router.replace("/");
     });
   }, []);
 
   useEffect(() => {
-    if (response?.type !== "success") {
-      if (response) console.log("OAuth response:", response.type, response);
-      return;
-    }
+    if (response?.type !== "success") return;
 
     (async () => {
-      // Raw useAuthRequest returns an auth code, not tokens — exchange it
       if (response.params?.code && request?.codeVerifier) {
         const tokenResponse = await exchangeCodeAsync(
           {
             clientId: GOOGLE_CLIENT_ID,
-            clientSecret: GOOGLE_CLIENT_SECRET,
+            // client secret required on web, not needed on native
+            ...(Platform.OS === "web" && { clientSecret: GOOGLE_CLIENT_SECRET }),
             code: response.params.code,
             redirectUri,
             extraParams: { code_verifier: request.codeVerifier },
           },
           googleAuthConfig,
         );
-        console.log("Token response scopes:", tokenResponse.scope);
-        console.log("Token response keys:", Object.keys(tokenResponse));
         await storeTokens(tokenResponse);
       } else if (response.authentication) {
         await storeTokens(response.authentication);
       } else {
-        console.log("OAuth: no code or authentication in response", response);
         return;
       }
 
@@ -98,11 +109,18 @@ export default function SignInScreen() {
       <Text style={styles.subtitle}>Capture thoughts, send to your inbox</Text>
 
       <Pressable
-        style={[styles.button, !request && styles.buttonDisabled]}
+        style={({ pressed }) => [
+          styles.button,
+          !request && styles.buttonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
         onPress={() => promptAsync()}
         disabled={!request}
       >
-        <Text style={styles.buttonText}>Sign in with Gmail</Text>
+        <View style={styles.logoContainer}>
+          <GoogleLogo size={20} />
+        </View>
+        <Text style={styles.buttonText}>Sign in with Google</Text>
       </Pressable>
 
       <Text style={styles.footnote}>
@@ -137,20 +155,32 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   button: {
-    width: "100%",
-    height: 56,
-    borderRadius: 12,
-    backgroundColor: "#000",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    alignSelf: "center",
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#747775",
+    paddingLeft: 16,
+    paddingRight: 16,
+  },
+  buttonPressed: {
+    opacity: 0.7,
   },
   buttonDisabled: {
     opacity: 0.4,
   },
+  logoContainer: {
+    marginRight: 12,
+  },
   buttonText: {
-    fontSize: 18,
-    color: "#fff",
-    fontWeight: "600",
+    fontSize: 14,
+    color: "#1F1F1F",
+    fontWeight: "500",
+    fontFamily: Platform.OS === "android" ? "Roboto" : undefined,
   },
   footnote: {
     fontSize: 13,
