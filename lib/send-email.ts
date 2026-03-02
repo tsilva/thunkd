@@ -1,26 +1,39 @@
-const RESEND_API_KEY = process.env.EXPO_PUBLIC_RESEND_API_KEY;
-const CAPTURE_EMAIL = process.env.EXPO_PUBLIC_CAPTURE_EMAIL;
+export type EmailConfig = {
+  apiKey: string;
+  captureEmail: string;
+};
 
-export function isConfigured(): boolean {
-  return Boolean(RESEND_API_KEY && CAPTURE_EMAIL);
+const ENV_API_KEY = process.env.EXPO_PUBLIC_RESEND_API_KEY;
+const ENV_CAPTURE_EMAIL = process.env.EXPO_PUBLIC_CAPTURE_EMAIL;
+
+export function isConfigured(config?: EmailConfig): boolean {
+  const apiKey = config?.apiKey || ENV_API_KEY;
+  const email = config?.captureEmail || ENV_CAPTURE_EMAIL;
+  return Boolean(apiKey && email);
 }
 
-export async function sendEmail(text: string): Promise<void> {
-  if (!RESEND_API_KEY || !CAPTURE_EMAIL) {
-    throw new Error("Missing EXPO_PUBLIC_RESEND_API_KEY or EXPO_PUBLIC_CAPTURE_EMAIL in .env");
+export async function sendEmail(
+  text: string,
+  config?: EmailConfig,
+): Promise<void> {
+  const apiKey = config?.apiKey || ENV_API_KEY;
+  const email = config?.captureEmail || ENV_CAPTURE_EMAIL;
+
+  if (!apiKey || !email) {
+    throw new Error("Missing Resend API key or capture email");
   }
 
-  const subject = text.length > 60 ? text.slice(0, 60) + "…" : text;
+  const subject = text.length > 60 ? text.slice(0, 60) + "\u2026" : text;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       from: "Mobile Capture <onboarding@resend.dev>",
-      to: [CAPTURE_EMAIL],
+      to: [email],
       subject,
       text,
     }),

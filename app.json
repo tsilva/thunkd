@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mobile-capture",
-    "slug": "mobile-capture",
+    "name": "Thunkd",
+    "slug": "thunkd",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile-capture",
+    "scheme": "thunkd",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tsilva.mobile_capture"
+      "bundleIdentifier": "com.tsilva.thunkd"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.tsilva.mobile_capture"
+      "package": "com.tsilva.thunkd"
     },
     "web": {
       "bundler": "metro",
@@ -30,12 +30,21 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Thunkd to use the microphone for voice input.",
+          "speechRecognitionPermission": "Allow Thunkd to use speech recognition."
+        }
+      ]
     ],
     "extra": {
       "eas": {
-        "projectId": ""
-      }
+        "projectId": "55dcff2f-9804-4742-b647-13b3d38fbd3f"
+      },
+      "router": {}
     }
   }
 }

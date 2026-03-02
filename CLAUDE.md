@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code when working with this repository.
 
-## Project: mobile-capture
+## Project: Thunkd
 
 *Add project-specific instructions here.*
 
