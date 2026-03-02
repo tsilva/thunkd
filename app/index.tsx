@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -10,17 +9,17 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { isConfigured, sendEmail } from "../lib/send-email";
 
 export default function HomeScreen() {
-  const [modalVisible, setModalVisible] = useState(false);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isConfigured()) {
     return (
-      <View style={styles.container}>
+      <View style={styles.setupContainer}>
         <Text style={styles.title}>Setup Required</Text>
         <Text style={styles.setupText}>
           Add your Resend API key and email to .env:{"\n\n"}
@@ -38,7 +37,6 @@ export default function HomeScreen() {
     try {
       await sendEmail(text.trim());
       setText("");
-      setModalVisible(false);
     } catch (e: any) {
       setError(e.message ?? "Failed to send");
     } finally {
@@ -46,61 +44,56 @@ export default function HomeScreen() {
     }
   };
 
-  const handleCancel = () => {
-    setError(null);
-    setModalVisible(false);
-  };
-
   return (
-    <View style={styles.container}>
-      <Pressable style={styles.captureButton} onPress={() => setModalVisible(true)}>
-        <Text style={styles.captureButtonText}>Capture</Text>
-      </Pressable>
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={styles.container}>
+          <TextInput
+            style={styles.textInput}
+            placeholder="What's on your mind?"
+            placeholderTextColor="#999"
+            multiline
+            autoFocus
+            value={text}
+            onChangeText={setText}
+            editable={!sending}
+          />
 
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <View style={styles.modalContent}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="What's on your mind?"
-              placeholderTextColor="#999"
-              multiline
-              autoFocus
-              value={text}
-              onChangeText={setText}
-              editable={!sending}
-            />
+          {error && <Text style={styles.errorText}>{error}</Text>}
 
-            {error && <Text style={styles.errorText}>{error}</Text>}
-
-            <View style={styles.buttonRow}>
-              <Pressable style={styles.cancelButton} onPress={handleCancel} disabled={sending}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
-                onPress={handleSend}
-                disabled={!text.trim() || sending}
-              >
-                {sending ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.sendButtonText}>Send</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-    </View>
+          <Pressable
+            style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
+            onPress={handleSend}
+            disabled={!text.trim() || sending}
+          >
+            {sending ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.sendButtonText}>Send</Text>
+            )}
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  flex: {
+    flex: 1,
+  },
   container: {
+    flex: 1,
+    padding: 16,
+  },
+  setupContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -119,68 +112,28 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     lineHeight: 22,
   },
-  captureButton: {
-    backgroundColor: "#000",
-    paddingHorizontal: 48,
-    paddingVertical: 18,
-    borderRadius: 12,
-  },
-  captureButtonText: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    minHeight: 260,
-  },
   textInput: {
     flex: 1,
     fontSize: 17,
     textAlignVertical: "top",
-    minHeight: 120,
-    marginBottom: 12,
   },
   errorText: {
     color: "#d00",
     fontSize: 14,
     marginBottom: 12,
   },
-  buttonRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: "#eee",
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    color: "#333",
-  },
   sendButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 10,
+    minHeight: 56,
+    borderRadius: 12,
     backgroundColor: "#000",
     alignItems: "center",
+    justifyContent: "center",
   },
   sendButtonDisabled: {
     opacity: 0.4,
   },
   sendButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#fff",
     fontWeight: "600",
   },
