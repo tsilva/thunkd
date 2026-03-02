@@ -1,0 +1,75 @@
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
+import { useSyncExternalStore } from "react";
+import { type EmailConfig, sendEmail } from "./send-email";
+
+const KEEP_AWAKE_TAG = "email-queue";
+const RETRY_DELAY_MS = 1000;
+
+type QueueItem = { text: string; config: EmailConfig };
+type Listener = () => void;
+
+let queue: QueueItem[] = [];
+let processing = false;
+let listeners: Listener[] = [];
+let errorHandler: ((msg: string) => void) | null = null;
+
+function notify() {
+  for (const l of listeners) l();
+}
+
+async function processQueue() {
+  if (processing) return;
+  processing = true;
+
+  while (queue.length > 0) {
+    const item = queue[0];
+    let ok = false;
+
+    try {
+      await sendEmail(item.text, item.config);
+      ok = true;
+    } catch {
+      // Retry once after delay
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+      try {
+        await sendEmail(item.text, item.config);
+        ok = true;
+      } catch (e: any) {
+        errorHandler?.(e.message ?? "Failed to send");
+      }
+    }
+
+    queue = queue.slice(1);
+    notify();
+  }
+
+  processing = false;
+  deactivateKeepAwake(KEEP_AWAKE_TAG);
+}
+
+export function enqueue(text: string, config: EmailConfig) {
+  queue = [...queue, { text, config }];
+  notify();
+  activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
+  processQueue();
+}
+
+export function setErrorHandler(fn: ((msg: string) => void) | null) {
+  errorHandler = fn;
+}
+
+function subscribe(listener: Listener) {
+  listeners = [...listeners, listener];
+  return () => {
+    listeners = listeners.filter((l) => l !== listener);
+  };
+}
+
+function getPendingCount() {
+  return queue.length;
+}
+
+export function useEmailQueue() {
+  const pendingCount = useSyncExternalStore(subscribe, getPendingCount);
+  return { pendingCount, enqueue };
+}
