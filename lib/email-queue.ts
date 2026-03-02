@@ -1,11 +1,11 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useSyncExternalStore } from "react";
-import { type EmailConfig, sendEmail } from "./send-email";
+import { sendEmail } from "./gmail";
 
 const KEEP_AWAKE_TAG = "email-queue";
 const RETRY_DELAY_MS = 1000;
 
-type QueueItem = { text: string; config: EmailConfig };
+type QueueItem = { text: string; userEmail: string };
 type Listener = () => void;
 
 let queue: QueueItem[] = [];
@@ -26,13 +26,13 @@ async function processQueue() {
     let ok = false;
 
     try {
-      await sendEmail(item.text, item.config);
+      await sendEmail(item.text, item.userEmail);
       ok = true;
     } catch {
       // Retry once after delay
       await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
       try {
-        await sendEmail(item.text, item.config);
+        await sendEmail(item.text, item.userEmail);
         ok = true;
       } catch (e: any) {
         errorHandler?.(e.message ?? "Failed to send");
@@ -47,8 +47,8 @@ async function processQueue() {
   deactivateKeepAwake(KEEP_AWAKE_TAG);
 }
 
-export function enqueue(text: string, config: EmailConfig) {
-  queue = [...queue, { text, config }];
+export function enqueue(text: string, userEmail: string) {
+  queue = [...queue, { text, userEmail }];
   notify();
   activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
   processQueue();
