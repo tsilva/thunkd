@@ -1,6 +1,6 @@
-# my-project
+# mobile-capture
 
-Short description of what this app does.
+
 
 ## Setup
 
