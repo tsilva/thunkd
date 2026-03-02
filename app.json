@@ -15,7 +15,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tsilva.thunkd"
+      "bundleIdentifier": "com.tsilva.thunkd",
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Allow Thunkd to use speech recognition.",
+        "NSMicrophoneUsageDescription": "Allow Thunkd to use the microphone for voice input."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +27,10 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.tsilva.thunkd",
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -42,10 +49,11 @@
       ]
     ],
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "55dcff2f-9804-4742-b647-13b3d38fbd3f"
-      },
-      "router": {}
-    }
+        "projectId": "d36851c8-a185-433f-b1ab-786e0f350bf6"
+      }
+    },
+    "owner": "engtiagosilva"
   }
 }
