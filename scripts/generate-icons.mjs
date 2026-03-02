@@ -55,16 +55,11 @@ Design concept:
 - Thought bubble: subtle, translucent, ghostly white outline — not the main focus, just framing the bolt
 - Style: sleek, high-contrast, dramatic — like a premium creative tool, NOT a generic corporate app
 - No text, no letters, no words
+- No rounded corners (iOS adds them)
+- No transparency — solid filled background
 - Square canvas, fills the entire frame edge to edge
 - Should look incredible at small sizes on a phone home screen
-- Think Notion meets Discord aesthetic — dark, bold, iconic
-
-CRITICAL rendering instructions:
-- Draw the icon design inside a large rounded rectangle with ~22% corner radius (iOS-style superellipse corners)
-- Fill ALL areas OUTSIDE the rounded rectangle with solid bright green #00FF00
-- The green must be pure #00FF00 — no gradients, no antialiasing bleed from green into the design
-- The corners of the square canvas should be solid #00FF00 green
-- The design itself must NOT contain any green (#00FF00) colors`;
+- Think Notion meets Discord aesthetic — dark, bold, iconic`;
 
 const ADAPTIVE_PROMPT = `Generate an Android adaptive icon foreground layer for "thunkd" — a thought-capture app.
 
@@ -72,17 +67,11 @@ Design concept:
 - Same identity: a bold stylized lightning bolt striking into a thought bubble
 - Lightning bolt: electric bright yellow-gold (#FFD700) with white-hot core
 - Thought bubble: subtle translucent white outline framing the bolt
+- TRANSPARENT background — the design floats on nothing
 - Center the design within the inner 66% of the canvas (Android crops outer edges)
 - No text, no letters, no words
 - Dramatic, high-contrast, sleek
-- Should be instantly recognizable at small sizes
-
-CRITICAL rendering instructions:
-- Draw the icon design inside a large rounded rectangle with ~22% corner radius (iOS-style superellipse corners)
-- Fill ALL areas OUTSIDE the rounded rectangle with solid bright green #00FF00
-- The green must be pure #00FF00 — no gradients, no antialiasing bleed from green into the design
-- The corners of the square canvas should be solid #00FF00 green
-- The design itself must NOT contain any green (#00FF00) colors`;
+- Should be instantly recognizable at small sizes`;
 
 async function generateImage(prompt) {
   console.log("  Calling Gemini...");
