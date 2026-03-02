@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code when working with this repository.
 
-## Project: my-project
+## Project: mobile-capture
 
-Short description of what this app does.
+
 
 ### Tech Stack
 

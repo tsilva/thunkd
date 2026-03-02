@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "my-project",
-    "slug": "my-project",
+    "name": "mobile-capture",
+    "slug": "mobile-capture",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "my-project",
+    "scheme": "mobile-capture",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tsilva.my_project"
+      "bundleIdentifier": "com.tsilva.mobile_capture"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.tsilva.my_project"
+      "package": "com.tsilva.mobile_capture"
     },
     "web": {
       "bundler": "metro",
