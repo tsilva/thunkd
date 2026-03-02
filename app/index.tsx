@@ -5,7 +5,6 @@ import {
   Animated,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -13,7 +12,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { type EmailConfig, isConfigured, sendEmail } from "../lib/send-email";
+import { setErrorHandler, useEmailQueue } from "../lib/email-queue";
+import { type EmailConfig, isConfigured } from "../lib/send-email";
 import { type Settings, getSettings, saveSetting } from "../lib/settings";
 import {
   ExpoSpeechRecognitionModule,
@@ -25,8 +25,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const [text, setText] = useState("");
-  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { pendingCount, enqueue } = useEmailQueue();
 
   // Settings state
   const [settings, setSettings] = useState<Settings>({ resendApiKey: "", captureEmail: "" });
@@ -102,6 +102,11 @@ export default function HomeScreen() {
     });
   }, []);
 
+  useEffect(() => {
+    setErrorHandler((msg) => setError(msg));
+    return () => setErrorHandler(null);
+  }, []);
+
   const emailConfig: EmailConfig = {
     apiKey: settings.resendApiKey,
     captureEmail: settings.captureEmail,
@@ -131,18 +136,12 @@ export default function HomeScreen() {
     }
   };
 
-  const handleSend = async () => {
-    if (!text.trim() || sending) return;
-    setSending(true);
+  const handleSend = () => {
+    if (!text.trim()) return;
     setError(null);
-    try {
-      await sendEmail(text.trim(), emailConfig);
-      setText("");
-    } catch (e: any) {
-      setError(e.message ?? "Failed to send");
-    } finally {
-      setSending(false);
-    }
+    enqueue(text.trim(), emailConfig);
+    setText("");
+    baseTextRef.current = "";
   };
 
   const gearButton = (
@@ -253,11 +252,19 @@ export default function HomeScreen() {
               autoFocus
               value={text}
               onChangeText={setText}
-              editable={!sending}
             />
           </View>
 
           {error && <Text style={styles.errorText}>{error}</Text>}
+
+          {pendingCount > 0 && (
+            <View style={styles.pendingRow}>
+              <ActivityIndicator size="small" color="#999" />
+              <Text style={styles.pendingText}>
+                Sending {pendingCount} message{pendingCount !== 1 ? "s" : ""}...
+              </Text>
+            </View>
+          )}
 
           <View style={styles.buttonRow}>
             {speechAvailable && (
@@ -265,7 +272,6 @@ export default function HomeScreen() {
                 <Pressable
                   style={[styles.micButton, recording && styles.micButtonActive]}
                   onPress={handleToggleRecording}
-                  disabled={sending}
                 >
                   <Ionicons
                     name={recording ? "mic" : "mic-outline"}
@@ -276,15 +282,11 @@ export default function HomeScreen() {
               </Animated.View>
             )}
             <Pressable
-              style={[styles.sendButton, (!text.trim() || sending) && styles.sendButtonDisabled]}
+              style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]}
               onPress={handleSend}
-              disabled={!text.trim() || sending}
+              disabled={!text.trim()}
             >
-              {sending ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.sendButtonText}>Send</Text>
-              )}
+              <Text style={styles.sendButtonText}>Send</Text>
             </Pressable>
           </View>
         </View>
@@ -337,6 +339,16 @@ const styles = StyleSheet.create({
     color: "#d00",
     fontSize: 14,
     marginBottom: 12,
+  },
+  pendingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 8,
+  },
+  pendingText: {
+    color: "#999",
+    fontSize: 13,
   },
   buttonRow: {
     flexDirection: "row",

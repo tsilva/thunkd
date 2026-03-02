@@ -180,75 +180,28 @@ async function resizeWithCanvas(inputBuffer, width, height) {
   }
 }
 
-async function chromakeyToTransparent(inputBuffer, tolerance = 70) {
-  // Convert bright green (#00FF00) pixels to transparent using sharp's raw pixel access
+async function applyRoundedCorners(inputBuffer, radiusPercent = 22) {
   try {
-    const sharp = await import("sharp");
-    const image = sharp.default(inputBuffer).ensureAlpha();
-    const { data, info } = await image
-      .raw()
-      .toBuffer({ resolveWithObject: true });
+    const sharp = (await import("sharp")).default;
+    const meta = await sharp(inputBuffer).metadata();
+    const { width, height } = meta;
+    const radius = Math.round(Math.min(width, height) * (radiusPercent / 100));
 
-    const { width, height, channels } = info;
-    const pixels = Buffer.from(data);
+    const mask = Buffer.from(
+      `<svg width="${width}" height="${height}">
+         <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" ry="${radius}" fill="white"/>
+       </svg>`
+    );
 
-    // Target color: #00FF00
-    const keyR = 0, keyG = 255, keyB = 0;
-
-    for (let i = 0; i < width * height; i++) {
-      const off = i * channels;
-      const r = pixels[off];
-      const g = pixels[off + 1];
-      const b = pixels[off + 2];
-
-      // Color distance from chromakey green
-      const dist = Math.sqrt(
-        (r - keyR) ** 2 + (g - keyG) ** 2 + (b - keyB) ** 2
-      );
-
-      if (dist < tolerance * 0.6) {
-        // Fully transparent — well within tolerance
-        pixels[off + 3] = 0;
-      } else if (dist < tolerance) {
-        // Graduated alpha at edges to avoid halo
-        const alpha = Math.round(255 * ((dist - tolerance * 0.6) / (tolerance * 0.4)));
-        pixels[off + 3] = Math.min(pixels[off + 3], alpha);
-      }
-      // else: leave pixel unchanged
-    }
-
-    return await sharp
-      .default(pixels, { raw: { width, height, channels } })
+    return sharp(inputBuffer)
+      .ensureAlpha()
+      .composite([{ input: mask, blend: "dest-in" }])
       .png()
       .toBuffer();
   } catch {
-    // Fallback: write temp file and use ImageMagick if available
-    const { tmpdir } = await import("node:os");
-    const { join } = await import("node:path");
-    const { readFile: rf } = await import("node:fs/promises");
-    const { execSync } = await import("node:child_process");
-
-    const tmpIn = join(tmpdir(), `chromakey-in-${Date.now()}.png`);
-    const tmpOut = join(tmpdir(), `chromakey-out-${Date.now()}.png`);
-
-    await writeFile(tmpIn, inputBuffer);
-    try {
-      execSync(
-        `magick "${tmpIn}" -fuzz ${tolerance}% -transparent "#00FF00" "${tmpOut}"`,
-        { stdio: "pipe" }
-      );
-      const result = await rf(tmpOut);
-      await Promise.allSettled([
-        import("node:fs/promises").then((fs) => fs.unlink(tmpIn)),
-        import("node:fs/promises").then((fs) => fs.unlink(tmpOut)),
-      ]);
-      return result;
-    } catch {
-      // Last resort: return as-is
-      console.warn("  Warning: could not remove chromakey (sharp and ImageMagick unavailable)");
-      await import("node:fs/promises").then((fs) => fs.unlink(tmpIn).catch(() => {}));
-      return inputBuffer;
-    }
+    // If sharp unavailable, return as-is (graceful degradation)
+    console.warn("  Warning: could not apply rounded corners (sharp unavailable)");
+    return inputBuffer;
   }
 }
 
@@ -262,20 +215,20 @@ async function main() {
 
   // Save icon.png at 1024x1024 with rounded transparent corners
   const icon1024 = await resizeWithCanvas(iconBuffer, 1024, 1024);
-  const iconTransparent = await chromakeyToTransparent(icon1024);
-  await writeFile(resolve(ASSETS, "icon.png"), iconTransparent);
+  const iconRounded = await applyRoundedCorners(icon1024);
+  await writeFile(resolve(ASSETS, "icon.png"), iconRounded);
   console.log("  -> assets/images/icon.png (1024x1024)");
 
   // Derive splash-icon.png at 512x512
   const splash = await resizeWithCanvas(iconBuffer, 512, 512);
-  const splashTransparent = await chromakeyToTransparent(splash);
-  await writeFile(resolve(ASSETS, "splash-icon.png"), splashTransparent);
+  const splashRounded = await applyRoundedCorners(splash);
+  await writeFile(resolve(ASSETS, "splash-icon.png"), splashRounded);
   console.log("  -> assets/images/splash-icon.png (512x512)");
 
   // Derive favicon.png at 48x48
   const favicon = await resizeWithCanvas(iconBuffer, 48, 48);
-  const faviconTransparent = await chromakeyToTransparent(favicon);
-  await writeFile(resolve(ASSETS, "favicon.png"), faviconTransparent);
+  const faviconRounded = await applyRoundedCorners(favicon);
+  await writeFile(resolve(ASSETS, "favicon.png"), faviconRounded);
   console.log("  -> assets/images/favicon.png (48x48)");
 
   // --- Step 2: Generate adaptive icon ---
@@ -284,8 +237,8 @@ async function main() {
   console.log(`  Got ${(adaptiveBuffer.length / 1024).toFixed(0)} KB image`);
 
   const adaptive1024 = await resizeWithCanvas(adaptiveBuffer, 1024, 1024);
-  const adaptiveTransparent = await chromakeyToTransparent(adaptive1024);
-  await writeFile(resolve(ASSETS, "adaptive-icon.png"), adaptiveTransparent);
+  const adaptiveRounded = await applyRoundedCorners(adaptive1024);
+  await writeFile(resolve(ASSETS, "adaptive-icon.png"), adaptiveRounded);
   console.log("  -> assets/images/adaptive-icon.png (1024x1024)");
 
   console.log("\nDone! All icons generated in assets/images/");
