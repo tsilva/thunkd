@@ -1,0 +1,9 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  pii-scan:
+    uses: tsilva/.github/.github/workflows/pii-scan.yml@main
