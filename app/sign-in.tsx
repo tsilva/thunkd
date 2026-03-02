@@ -1,14 +1,18 @@
-import * as Google from "expo-auth-session/providers/google";
+import {
+  exchangeCodeAsync,
+  makeRedirectUri,
+  useAuthRequest,
+} from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
-  GOOGLE_ANDROID_CLIENT_ID,
   GOOGLE_CLIENT_ID,
-  GOOGLE_IOS_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
   SCOPES,
   fetchUserProfile,
+  googleAuthConfig,
   isAuthenticated,
   storeTokens,
   storeUserInfo,
@@ -16,17 +20,32 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
+const redirectUri = makeRedirectUri({
+  native: "thunkd://sign-in",
+  preferLocalhost: false,
+});
+
 export default function SignInScreen() {
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: GOOGLE_CLIENT_ID,
-    iosClientId: GOOGLE_IOS_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-    scopes: SCOPES,
-    extraParams: {
-      access_type: "offline",
-      prompt: "consent",
+  const [request, response, promptAsync] = useAuthRequest(
+    {
+      clientId: GOOGLE_CLIENT_ID,
+      redirectUri,
+      scopes: SCOPES,
+      extraParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+      usePKCE: true,
     },
-  });
+    googleAuthConfig,
+  );
+
+  useEffect(() => {
+    if (request) {
+      console.log("OAuth redirect URI:", request.redirectUri);
+      console.log("OAuth request URL:", request.url);
+    }
+  }, [request]);
 
   useEffect(() => {
     isAuthenticated().then((authed) => {
@@ -35,10 +54,34 @@ export default function SignInScreen() {
   }, []);
 
   useEffect(() => {
-    if (response?.type !== "success" || !response.authentication) return;
+    if (response?.type !== "success") {
+      if (response) console.log("OAuth response:", response.type, response);
+      return;
+    }
 
     (async () => {
-      await storeTokens(response.authentication!);
+      // Raw useAuthRequest returns an auth code, not tokens — exchange it
+      if (response.params?.code && request?.codeVerifier) {
+        const tokenResponse = await exchangeCodeAsync(
+          {
+            clientId: GOOGLE_CLIENT_ID,
+            clientSecret: GOOGLE_CLIENT_SECRET,
+            code: response.params.code,
+            redirectUri,
+            extraParams: { code_verifier: request.codeVerifier },
+          },
+          googleAuthConfig,
+        );
+        console.log("Token response scopes:", tokenResponse.scope);
+        console.log("Token response keys:", Object.keys(tokenResponse));
+        await storeTokens(tokenResponse);
+      } else if (response.authentication) {
+        await storeTokens(response.authentication);
+      } else {
+        console.log("OAuth: no code or authentication in response", response);
+        return;
+      }
+
       const profile = await fetchUserProfile();
       await storeUserInfo(profile);
       router.replace("/");
