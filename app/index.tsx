@@ -241,7 +241,7 @@ export default function HomeScreen() {
       {gearButton}
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior="padding"
       >
         <View style={styles.container}>
           <View style={styles.textInputWrapper}>
