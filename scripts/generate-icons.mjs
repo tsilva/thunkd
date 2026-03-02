@@ -7,10 +7,10 @@
  *   OPENROUTER_API_KEY=or-... node scripts/generate-icons.mjs
  *
  * Generates:
- *   assets/images/icon.png          – 1024x1024, App Store icon (no transparency)
- *   assets/images/adaptive-icon.png – 1024x1024, Android adaptive icon foreground
- *   assets/images/splash-icon.png   – 512x512,   Splash screen logo
- *   assets/images/favicon.png       – 48x48,     Web favicon
+ *   assets/images/icon.png          – 1024x1024, App Store icon (rounded corners, transparent)
+ *   assets/images/adaptive-icon.png – 1024x1024, Android adaptive icon foreground (rounded corners, transparent)
+ *   assets/images/splash-icon.png   – 512x512,   Splash screen logo (rounded corners, transparent)
+ *   assets/images/favicon.png       – 48x48,     Web favicon (rounded corners, transparent)
  */
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -44,29 +44,45 @@ if (!API_KEY) {
 const MODEL = "google/gemini-3.1-flash-image-preview";
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-const ICON_PROMPT = `Generate a modern, minimalist app icon for a mobile app called "thunkd".
-The app lets users quickly capture thoughts via voice or text and email them to themselves.
+const ICON_PROMPT = `Generate a striking, premium app icon for "thunkd" — a thought-capture app.
+The name "thunkd" means a thought just hit you, like a lightning bolt of inspiration.
 
-Design requirements:
-- Clean, bold, instantly recognizable at small sizes
-- Use a simple icon/symbol: a stylized speech bubble combined with a small microphone motif
-- Color palette: deep indigo/navy (#1a1a2e) background with a bright accent (white or soft cyan glow)
-- Flat design, no gradients, no text, no letters
-- Square canvas, fill the frame
-- Professional, modern, suitable for the iOS App Store
-- No rounded corners (iOS adds them automatically)
-- No transparency — solid background filling the entire square`;
+Design concept:
+- A bold, stylized lightning bolt striking into a thought bubble — the moment an idea lands
+- The lightning bolt should feel electric and alive, cutting diagonally through the icon
+- Background: rich deep purple-to-black gradient, moody and premium
+- Lightning bolt: electric bright yellow-gold (#FFD700) with a subtle white-hot core glow
+- Thought bubble: subtle, translucent, ghostly white outline — not the main focus, just framing the bolt
+- Style: sleek, high-contrast, dramatic — like a premium creative tool, NOT a generic corporate app
+- No text, no letters, no words
+- Square canvas, fills the entire frame edge to edge
+- Should look incredible at small sizes on a phone home screen
+- Think Notion meets Discord aesthetic — dark, bold, iconic
 
-const ADAPTIVE_PROMPT = `Generate a modern, minimalist Android adaptive icon foreground layer for an app called "thunkd".
-The app lets users quickly capture thoughts via voice or text and email them to themselves.
+CRITICAL rendering instructions:
+- Draw the icon design inside a large rounded rectangle with ~22% corner radius (iOS-style superellipse corners)
+- Fill ALL areas OUTSIDE the rounded rectangle with solid bright green #00FF00
+- The green must be pure #00FF00 — no gradients, no antialiasing bleed from green into the design
+- The corners of the square canvas should be solid #00FF00 green
+- The design itself must NOT contain any green (#00FF00) colors`;
 
-Design requirements:
-- Same visual identity: a stylized speech bubble combined with a small microphone motif
-- Color palette: deep indigo/navy symbol with bright white or soft cyan accent
-- TRANSPARENT background (this is the foreground layer only — the background color is white)
-- Center the icon in the inner 66% of the canvas (Android crops the outer edges into circles/squircles)
-- Flat design, no gradients, no text, no letters
-- Professional, clean, instantly recognizable at small sizes`;
+const ADAPTIVE_PROMPT = `Generate an Android adaptive icon foreground layer for "thunkd" — a thought-capture app.
+
+Design concept:
+- Same identity: a bold stylized lightning bolt striking into a thought bubble
+- Lightning bolt: electric bright yellow-gold (#FFD700) with white-hot core
+- Thought bubble: subtle translucent white outline framing the bolt
+- Center the design within the inner 66% of the canvas (Android crops outer edges)
+- No text, no letters, no words
+- Dramatic, high-contrast, sleek
+- Should be instantly recognizable at small sizes
+
+CRITICAL rendering instructions:
+- Draw the icon design inside a large rounded rectangle with ~22% corner radius (iOS-style superellipse corners)
+- Fill ALL areas OUTSIDE the rounded rectangle with solid bright green #00FF00
+- The green must be pure #00FF00 — no gradients, no antialiasing bleed from green into the design
+- The corners of the square canvas should be solid #00FF00 green
+- The design itself must NOT contain any green (#00FF00) colors`;
 
 async function generateImage(prompt) {
   console.log("  Calling Gemini...");
@@ -175,17 +191,75 @@ async function resizeWithCanvas(inputBuffer, width, height) {
   }
 }
 
-async function removeTransparency(inputBuffer) {
-  // Flatten onto white background to remove alpha channel
+async function chromakeyToTransparent(inputBuffer, tolerance = 70) {
+  // Convert bright green (#00FF00) pixels to transparent using sharp's raw pixel access
   try {
     const sharp = await import("sharp");
+    const image = sharp.default(inputBuffer).ensureAlpha();
+    const { data, info } = await image
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const { width, height, channels } = info;
+    const pixels = Buffer.from(data);
+
+    // Target color: #00FF00
+    const keyR = 0, keyG = 255, keyB = 0;
+
+    for (let i = 0; i < width * height; i++) {
+      const off = i * channels;
+      const r = pixels[off];
+      const g = pixels[off + 1];
+      const b = pixels[off + 2];
+
+      // Color distance from chromakey green
+      const dist = Math.sqrt(
+        (r - keyR) ** 2 + (g - keyG) ** 2 + (b - keyB) ** 2
+      );
+
+      if (dist < tolerance * 0.6) {
+        // Fully transparent — well within tolerance
+        pixels[off + 3] = 0;
+      } else if (dist < tolerance) {
+        // Graduated alpha at edges to avoid halo
+        const alpha = Math.round(255 * ((dist - tolerance * 0.6) / (tolerance * 0.4)));
+        pixels[off + 3] = Math.min(pixels[off + 3], alpha);
+      }
+      // else: leave pixel unchanged
+    }
+
     return await sharp
-      .default(inputBuffer)
-      .flatten({ background: { r: 26, g: 26, b: 46 } }) // #1a1a2e
+      .default(pixels, { raw: { width, height, channels } })
       .png()
       .toBuffer();
   } catch {
-    return inputBuffer; // sips doesn't easily remove transparency; return as-is
+    // Fallback: write temp file and use ImageMagick if available
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { readFile: rf } = await import("node:fs/promises");
+    const { execSync } = await import("node:child_process");
+
+    const tmpIn = join(tmpdir(), `chromakey-in-${Date.now()}.png`);
+    const tmpOut = join(tmpdir(), `chromakey-out-${Date.now()}.png`);
+
+    await writeFile(tmpIn, inputBuffer);
+    try {
+      execSync(
+        `magick "${tmpIn}" -fuzz ${tolerance}% -transparent "#00FF00" "${tmpOut}"`,
+        { stdio: "pipe" }
+      );
+      const result = await rf(tmpOut);
+      await Promise.allSettled([
+        import("node:fs/promises").then((fs) => fs.unlink(tmpIn)),
+        import("node:fs/promises").then((fs) => fs.unlink(tmpOut)),
+      ]);
+      return result;
+    } catch {
+      // Last resort: return as-is
+      console.warn("  Warning: could not remove chromakey (sharp and ImageMagick unavailable)");
+      await import("node:fs/promises").then((fs) => fs.unlink(tmpIn).catch(() => {}));
+      return inputBuffer;
+    }
   }
 }
 
@@ -197,20 +271,22 @@ async function main() {
   const iconBuffer = await generateImage(ICON_PROMPT);
   console.log(`  Got ${(iconBuffer.length / 1024).toFixed(0)} KB image`);
 
-  // Save icon.png at 1024x1024 (resize if needed, ensure no transparency)
+  // Save icon.png at 1024x1024 with rounded transparent corners
   const icon1024 = await resizeWithCanvas(iconBuffer, 1024, 1024);
-  const iconFlat = await removeTransparency(icon1024);
-  await writeFile(resolve(ASSETS, "icon.png"), iconFlat);
+  const iconTransparent = await chromakeyToTransparent(icon1024);
+  await writeFile(resolve(ASSETS, "icon.png"), iconTransparent);
   console.log("  -> assets/images/icon.png (1024x1024)");
 
   // Derive splash-icon.png at 512x512
-  const splash = await resizeWithCanvas(iconFlat, 512, 512);
-  await writeFile(resolve(ASSETS, "splash-icon.png"), splash);
+  const splash = await resizeWithCanvas(iconBuffer, 512, 512);
+  const splashTransparent = await chromakeyToTransparent(splash);
+  await writeFile(resolve(ASSETS, "splash-icon.png"), splashTransparent);
   console.log("  -> assets/images/splash-icon.png (512x512)");
 
   // Derive favicon.png at 48x48
-  const favicon = await resizeWithCanvas(iconFlat, 48, 48);
-  await writeFile(resolve(ASSETS, "favicon.png"), favicon);
+  const favicon = await resizeWithCanvas(iconBuffer, 48, 48);
+  const faviconTransparent = await chromakeyToTransparent(favicon);
+  await writeFile(resolve(ASSETS, "favicon.png"), faviconTransparent);
   console.log("  -> assets/images/favicon.png (48x48)");
 
   // --- Step 2: Generate adaptive icon ---
@@ -219,7 +295,8 @@ async function main() {
   console.log(`  Got ${(adaptiveBuffer.length / 1024).toFixed(0)} KB image`);
 
   const adaptive1024 = await resizeWithCanvas(adaptiveBuffer, 1024, 1024);
-  await writeFile(resolve(ASSETS, "adaptive-icon.png"), adaptive1024);
+  const adaptiveTransparent = await chromakeyToTransparent(adaptive1024);
+  await writeFile(resolve(ASSETS, "adaptive-icon.png"), adaptiveTransparent);
   console.log("  -> assets/images/adaptive-icon.png (1024x1024)");
 
   console.log("\nDone! All icons generated in assets/images/");

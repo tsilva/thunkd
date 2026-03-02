@@ -244,16 +244,18 @@ export default function HomeScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.container}>
-          <TextInput
-            style={styles.textInput}
-            placeholder="What's on your mind?"
-            placeholderTextColor="#999"
-            multiline
-            autoFocus
-            value={text}
-            onChangeText={setText}
-            editable={!sending}
-          />
+          <View style={styles.textInputWrapper}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="What's on your mind?"
+              placeholderTextColor="#999"
+              multiline
+              autoFocus
+              value={text}
+              onChangeText={setText}
+              editable={!sending}
+            />
+          </View>
 
           {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -321,6 +323,10 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     lineHeight: 22,
+  },
+  textInputWrapper: {
+    flex: 1,
+    minHeight: 0,
   },
   textInput: {
     flex: 1,
