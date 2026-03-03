@@ -27,3 +27,12 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - run: eas build --platform all --non-interactive --no-wait
+
+      # Uncomment the steps below once a Play Store service account key
+      # is stored as the PLAY_STORE_SERVICE_ACCOUNT_KEY GitHub secret.
+      #
+      # - name: Decode Play Store service account key
+      #   run: echo "${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_KEY }}" | base64 -d > service-account-play-store.json
+      #
+      # - name: Submit to Play Store (internal track)
+      #   run: eas submit --platform android --profile production --non-interactive

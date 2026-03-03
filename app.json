@@ -26,6 +26,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "versionCode": 1,
       "package": "com.tsilva.thunkd",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
@@ -51,6 +52,7 @@
       "@react-native-google-signin/google-signin"
     ],
     "extra": {
+      "privacyPolicyUrl": "https://gist.github.com/tsilva/53f0d4cef03a8c6032030878a42df9fd",
       "router": {},
       "eas": {
         "projectId": "d36851c8-a185-433f-b1ab-786e0f350bf6"

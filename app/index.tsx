@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { Redirect, router } from "expo-router";
+import { openBrowserAsync } from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -177,6 +179,15 @@ export default function HomeScreen() {
 
           <Text style={styles.label}>Signed in as</Text>
           <Text style={styles.emailText}>{userInfo?.email ?? "Unknown"}</Text>
+
+          <Pressable
+            onPress={() => {
+              const url = Constants.expoConfig?.extra?.privacyPolicyUrl;
+              if (url) openBrowserAsync(url);
+            }}
+          >
+            <Text style={styles.privacyLink}>Privacy Policy</Text>
+          </Pressable>
 
           <View style={styles.modalButtons}>
             <Pressable
@@ -362,6 +373,11 @@ const styles = StyleSheet.create({
   emailText: {
     fontSize: 16,
     color: "#000",
+    marginBottom: 24,
+  },
+  privacyLink: {
+    fontSize: 15,
+    color: "#007AFF",
     marginBottom: 32,
   },
   modalButtons: {
