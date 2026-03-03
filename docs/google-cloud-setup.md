@@ -2,19 +2,35 @@
 
 This guide walks through configuring Google Cloud so that Thunkd can authenticate users via Google OAuth and send emails through the Gmail API.
 
-## 1. Create or select a project
+## Automated Setup (Recommended)
+
+The setup script automates project creation and API enablement, then guides you through the manual OAuth steps with pre-filled instructions:
+
+```bash
+make setup-gcloud
+```
+
+**Prerequisites:** [Google Cloud SDK (`gcloud`)](https://cloud.google.com/sdk/docs/install) must be installed.
+
+The script is fully idempotent — you can re-run it at any time and it will skip steps that are already complete. If you prefer to do everything manually, follow the steps below.
+
+---
+
+## Manual Setup
+
+### 1. Create or select a project
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Click the project dropdown (top bar) and either select an existing project or click **New Project**
 3. Name it something like `thunkd` and click **Create**
 
-## 2. Enable the Gmail API
+### 2. Enable the Gmail API
 
 1. Navigate to **APIs & Services > Library**
 2. Search for **Gmail API**
 3. Click it and press **Enable**
 
-## 3. Configure the OAuth consent screen
+### 3. Configure the OAuth consent screen
 
 1. Go to **APIs & Services > OAuth consent screen**
 2. Select **External** user type (unless you have a Google Workspace org and want internal-only) and click **Create**
@@ -24,7 +40,7 @@ This guide walks through configuring Google Cloud so that Thunkd can authenticat
    - **Developer contact email:** your email
 4. Click **Save and Continue**
 
-### Add scopes
+#### Add scopes
 
 1. Click **Add or Remove Scopes**
 2. Add the following scopes:
@@ -36,7 +52,7 @@ This guide walks through configuring Google Cloud so that Thunkd can authenticat
 
 > **Note:** `gmail.send` is classified as a **sensitive scope**. During development this is fine — you just need to add test users (next step). For production, Google requires a brief verification process (typically a few days).
 
-### Add test users
+#### Add test users
 
 1. On the **Test users** step, click **Add Users**
 2. Enter the Gmail addresses that will test the app
@@ -44,13 +60,13 @@ This guide walks through configuring Google Cloud so that Thunkd can authenticat
 
 Only these accounts will be able to sign in while the app is in "Testing" publishing status.
 
-## 4. Create OAuth 2.0 Client IDs
+### 4. Create OAuth 2.0 Client IDs
 
 Go to **APIs & Services > Credentials** and click **Create Credentials > OAuth client ID**.
 
 You need to create **three** client IDs:
 
-### Web client
+#### Web client
 
 - **Application type:** Web application
 - **Name:** `Thunkd Web`
@@ -60,7 +76,7 @@ You need to create **three** client IDs:
 
 > The web client ID is also used by `expo-auth-session` for the token exchange (PKCE flow) on all platforms.
 
-### iOS client
+#### iOS client
 
 - **Application type:** iOS
 - **Name:** `Thunkd iOS`
@@ -68,7 +84,7 @@ You need to create **three** client IDs:
 - Click **Create**
 - Copy the **Client ID** — this is your `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
 
-### Android client
+#### Android client
 
 - **Application type:** Android
 - **Name:** `Thunkd Android`
@@ -77,7 +93,7 @@ You need to create **three** client IDs:
 - Click **Create**
 - Copy the **Client ID** — this is your `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
 
-## 5. Add client IDs to your `.env`
+### 5. Add client IDs to your `.env`
 
 Copy `.env.example` to `.env` and fill in the values:
 
@@ -87,7 +103,7 @@ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=123456789-def.apps.googleusercontent.com
 EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=123456789-ghi.apps.googleusercontent.com
 ```
 
-## 6. Verify the setup
+### 6. Verify the setup
 
 1. Run `npx expo start`
 2. The app should show the sign-in screen
@@ -96,7 +112,7 @@ EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=123456789-ghi.apps.googleusercontent.com
 5. After consent, you're redirected back to the capture screen
 6. Type a thought, tap Send — an email should arrive in your inbox (from yourself)
 
-## Appendix
+### Appendix
 
 ### Getting the Android SHA-1 fingerprint
 

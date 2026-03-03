@@ -1,7 +1,7 @@
 .PHONY: help install ci start start-clear ios android web lint typecheck check \
 	build-preview-android build-preview-ios \
 	build-production-android build-production-ios build-production \
-	update-preview update-production icons clean
+	update-preview update-production icons clean setup-gcloud
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -59,6 +59,9 @@ update-production: ## OTA update to production (msg="description")
 
 icons: ## Generate app icons
 	node scripts/generate-icons.mjs
+
+setup-gcloud: ## Set up Google Cloud project and OAuth credentials
+	./scripts/setup-gcloud.sh
 
 clean: ## Remove node_modules, caches
 	rm -rf node_modules .expo .eas web-build

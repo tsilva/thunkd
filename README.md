@@ -36,7 +36,7 @@
 
 - [Node.js](https://nodejs.org/) (v18+)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/) (`npx expo`)
-- Google Cloud project with OAuth credentials ([setup guide](docs/google-cloud-setup.md))
+- [Google Cloud SDK (`gcloud`)](https://cloud.google.com/sdk/docs/install)
 
 ### Install & Run
 
@@ -44,13 +44,14 @@
 # Install dependencies
 npm install
 
-# Copy environment variables
-cp .env.example .env
-# Fill in your Google OAuth client IDs (see docs/google-cloud-setup.md)
+# Set up Google Cloud project + OAuth credentials (interactive)
+make setup-gcloud
 
 # Start the dev server
 npx expo start
 ```
+
+The setup script creates the Google Cloud project, enables the Gmail API, and walks you through configuring OAuth credentials. See the [full setup guide](docs/google-cloud-setup.md) for manual steps or troubleshooting.
 
 Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press `i`/`a` to launch a simulator.
 
@@ -82,6 +83,7 @@ lib/
 docs/
   google-cloud-setup.md  # Google Cloud Console configuration guide
 scripts/
+  setup-gcloud.sh        # Interactive Google Cloud setup script
   generate-icons.mjs     # App icon generation script
 ```
 
