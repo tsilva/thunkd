@@ -15,6 +15,7 @@ Zero-friction mobile app for capturing thoughts via voice or text and sending th
 - Gmail API for sending emails
 - expo-speech-recognition for voice capture
 - expo-secure-store for token storage
+- expo-updates for OTA updates
 
 ## Commands
 

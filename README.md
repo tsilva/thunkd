@@ -21,6 +21,7 @@
 - [Quick Start](#-quick-start)
 - [Project Structure](#-project-structure)
 - [Tech Stack](#-tech-stack)
+- [Deploy to Phone](#-deploy-to-phone)
 - [Building](#-building)
 - [License](#-license)
 
@@ -76,6 +77,29 @@ Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press `i`/`a
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET` | Google OAuth web client secret |
 
 See [Google Cloud Setup](docs/google-cloud-setup.md) for step-by-step instructions on creating these credentials.
+
+## 📲 Deploy to Phone
+
+Build once, then push updates over the air — no reinstall needed.
+
+### First Time Setup
+
+```bash
+# Build a preview APK (runs on EAS cloud)
+make deploy-android
+```
+
+Once the build completes, download the APK from the link EAS provides and install it on your Android phone.
+
+### Pushing Updates
+
+After the initial install, push code changes instantly via OTA:
+
+```bash
+make update-preview msg="added voice timeout"
+```
+
+The app picks up the new bundle on next launch. No rebuild required unless you add or change native dependencies (new Expo plugins, SDK upgrades, etc.).
 
 ## 📁 Project Structure
 

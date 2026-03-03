@@ -38,6 +38,12 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d36851c8-a185-433f-b1ab-786e0f350bf6"
+    },
     "plugins": [
       "expo-router",
       "expo-secure-store",

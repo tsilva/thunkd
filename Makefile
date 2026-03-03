@@ -2,7 +2,7 @@
 	build-preview-android build-preview-ios \
 	build-production-android build-production-ios build-production \
 	submit-android submit-ios \
-	update-preview update-production icons clean setup setup-gcloud
+	deploy-android update-preview update-production icons clean setup setup-gcloud
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -51,6 +51,9 @@ build-production-ios: ## EAS build: iOS production
 
 build-production: ## EAS build: all platforms production
 	eas build --platform all --profile production
+
+deploy-android: ## Build preview APK, then use update-preview for OTA updates
+	eas build --platform android --profile preview
 
 submit-android: ## Submit Android build to Play Store (internal track)
 	eas submit --platform android --profile production
