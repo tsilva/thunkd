@@ -1,19 +1,15 @@
-import {
-  exchangeCodeAsync,
-  makeRedirectUri,
-  useAuthRequest,
-} from "expo-auth-session";
+import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect } from "react";
 import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { router } from "expo-router";
 import {
+  GOOGLE_ANDROID_CLIENT_ID,
   GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
+  GOOGLE_IOS_CLIENT_ID,
   SCOPES,
   fetchUserProfile,
-  googleAuthConfig,
   isAuthenticated,
   storeTokens,
   storeUserInfo,
@@ -44,25 +40,17 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-const redirectUri = makeRedirectUri({
-  native: "thunkd://sign-in",
-  preferLocalhost: false,
-});
-
 export default function SignInScreen() {
-  const [request, response, promptAsync] = useAuthRequest(
-    {
-      clientId: GOOGLE_CLIENT_ID,
-      redirectUri,
-      scopes: SCOPES,
-      extraParams: {
-        access_type: "offline",
-        prompt: "consent",
-      },
-      usePKCE: true,
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: GOOGLE_CLIENT_ID,
+    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+    scopes: SCOPES,
+    extraParams: {
+      access_type: "offline",
+      prompt: "consent",
     },
-    googleAuthConfig,
-  );
+  });
 
   useEffect(() => {
     isAuthenticated().then((authed) => {
@@ -71,28 +59,10 @@ export default function SignInScreen() {
   }, []);
 
   useEffect(() => {
-    if (response?.type !== "success") return;
+    if (response?.type !== "success" || !response.authentication) return;
 
     (async () => {
-      if (response.params?.code && request?.codeVerifier) {
-        const tokenResponse = await exchangeCodeAsync(
-          {
-            clientId: GOOGLE_CLIENT_ID,
-            // client secret required on web, not needed on native
-            ...(Platform.OS === "web" && { clientSecret: GOOGLE_CLIENT_SECRET }),
-            code: response.params.code,
-            redirectUri,
-            extraParams: { code_verifier: request.codeVerifier },
-          },
-          googleAuthConfig,
-        );
-        await storeTokens(tokenResponse);
-      } else if (response.authentication) {
-        await storeTokens(response.authentication);
-      } else {
-        return;
-      }
-
+      await storeTokens(response.authentication!);
       const profile = await fetchUserProfile();
       await storeUserInfo(profile);
       router.replace("/");
