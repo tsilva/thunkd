@@ -21,12 +21,12 @@ DIM='\033[2m'
 RESET='\033[0m'
 
 # -- Helpers ------------------------------------------------------------------
-info()    { printf "${BLUE}ℹ${RESET}  %s\n" "$*"; }
-success() { printf "${GREEN}✔${RESET}  %s\n" "$*"; }
-warn()    { printf "${YELLOW}⚠${RESET}  %s\n" "$*"; }
-error()   { printf "${RED}✖${RESET}  %s\n" "$*" >&2; }
-header()  { printf "\n${BOLD}${CYAN}── %s ──${RESET}\n\n" "$*"; }
-dim()     { printf "${DIM}%s${RESET}\n" "$*"; }
+info()    { printf "${BLUE}ℹ${RESET}  %b\n" "$*"; }
+success() { printf "${GREEN}✔${RESET}  %b\n" "$*"; }
+warn()    { printf "${YELLOW}⚠${RESET}  %b\n" "$*"; }
+error()   { printf "${RED}✖${RESET}  %b\n" "$*" >&2; }
+header()  { printf "\n${BOLD}${CYAN}── %b ──${RESET}\n\n" "$*"; }
+dim()     { printf "${DIM}%b${RESET}\n" "$*"; }
 
 prompt_default() {
   local prompt="$1" default="$2" var_name="$3"
