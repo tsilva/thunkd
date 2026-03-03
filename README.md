@@ -26,7 +26,7 @@
 - **Voice capture** — tap the mic and speak, Thunkd transcribes in real-time via on-device speech recognition
 - **One-tap send** — thoughts go straight to your own Gmail inbox as emails
 - **Email queue with retry** — messages queue up and retry automatically if the network drops
-- **Google OAuth** — sign in once with your Google account (PKCE flow, tokens stored securely)
+- **Google OAuth** — sign in once with your Google account (native Google Sign-In SDK, tokens stored securely)
 - **Minimal UI** — one screen, one text field, one button. Nothing else.
 - **Cross-platform** — runs on iOS, Android, and web
 
@@ -63,8 +63,6 @@ Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press `i`/`a
 |----------|-------------|
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google OAuth web client ID |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET` | Google OAuth web client secret |
-| `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | Google OAuth iOS client ID |
-| `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` | Google OAuth Android client ID |
 
 See [Google Cloud Setup](docs/google-cloud-setup.md) for step-by-step instructions on creating these credentials.
 
@@ -94,7 +92,7 @@ scripts/
 | Framework | [React Native](https://reactnative.dev) 0.81 + [Expo](https://expo.dev) SDK 54 |
 | Language | [TypeScript](https://www.typescriptlang.org) 5.9 |
 | Navigation | [Expo Router](https://docs.expo.dev/router/introduction/) (file-based) |
-| Auth | [expo-auth-session](https://docs.expo.dev/versions/latest/sdk/auth-session/) + Google OAuth 2.0 (PKCE) |
+| Auth | [@react-native-google-signin](https://github.com/react-native-google-signin/google-signin) + Google OAuth 2.0 |
 | Email | [Gmail API](https://developers.google.com/gmail/api) (send scope) |
 | Speech | [expo-speech-recognition](https://github.com/jamsch/expo-speech-recognition) |
 | Storage | [expo-secure-store](https://docs.expo.dev/versions/latest/sdk/securestore/) (tokens) |

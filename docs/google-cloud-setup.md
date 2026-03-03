@@ -70,11 +70,11 @@ You need to create **three** client IDs:
 
 - **Application type:** Web application
 - **Name:** `Thunkd Web`
-- **Authorized redirect URIs:** add `https://auth.expo.io/@engtiagosilva/thunkd`
+- No redirect URIs needed (the native SDK handles auth natively, not via browser redirects)
 - Click **Create**
-- Copy the **Client ID** — this is your `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`
+- Copy the **Client ID** and **Client Secret** — these are your `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET`
 
-> The web client ID is also used by `expo-auth-session` for the token exchange (PKCE flow) on all platforms.
+> The web client ID is used by the native Google Sign-In SDK to obtain a server auth code, which is then exchanged for access/refresh tokens.
 
 #### iOS client
 
@@ -82,7 +82,8 @@ You need to create **three** client IDs:
 - **Name:** `Thunkd iOS`
 - **Bundle ID:** `com.tsilva.thunkd`
 - Click **Create**
-- Copy the **Client ID** — this is your `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`
+
+> The iOS client ID is automatically picked up by the native SDK via the config plugin — no env var needed.
 
 #### Android client
 
@@ -91,7 +92,8 @@ You need to create **three** client IDs:
 - **Package name:** `com.tsilva.thunkd`
 - **SHA-1 certificate fingerprint:** see [Getting the SHA-1](#getting-the-android-sha-1-fingerprint) below
 - Click **Create**
-- Copy the **Client ID** — this is your `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`
+
+> **Important:** The SHA-1 fingerprint must match the signing key used by your build. For EAS dev builds, use `eas credentials -p android` to find it. For local debug builds, use the debug keystore. A mismatched SHA-1 will cause sign-in to fail silently.
 
 ### 5. Add client IDs to your `.env`
 
@@ -99,34 +101,37 @@ Copy `.env.example` to `.env` and fill in the values:
 
 ```
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=123456789-abc.apps.googleusercontent.com
-EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=123456789-def.apps.googleusercontent.com
-EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID=123456789-ghi.apps.googleusercontent.com
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET=GOCSPX-...
 ```
 
 ### 6. Verify the setup
 
-1. Run `npx expo start`
-2. The app should show the sign-in screen
-3. Tap **Sign in with Gmail** — a browser opens with Google's OAuth flow
+1. Build a dev client: `eas build --platform android --profile development`
+2. Install the APK and launch the app
+3. Tap **Sign in with Google** — the native Google account picker should appear (no browser)
 4. Sign in with one of the test users you added
-5. After consent, you're redirected back to the capture screen
+5. After consent, you're redirected to the capture screen
 6. Type a thought, tap Send — an email should arrive in your inbox (from yourself)
 
 ### Appendix
 
 ### Getting the Android SHA-1 fingerprint
 
-For **debug builds** (Expo Go / development):
+For **EAS builds** (recommended):
 
 ```sh
-# macOS / Linux
-keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android 2>/dev/null | grep SHA1
-
-# Or via EAS
 eas credentials -p android
 ```
 
+For **local debug builds**:
+
+```sh
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android 2>/dev/null | grep SHA1
+```
+
 For **production builds**, use the upload keystore or the signing key from Google Play Console (**Setup > App signing > SHA-1 certificate fingerprint**).
+
+> **Tip:** If you have multiple SHA-1 fingerprints (debug + EAS), create a separate Android OAuth client for each one, or add multiple fingerprints to the same client.
 
 ### Moving to production
 

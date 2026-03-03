@@ -47,7 +47,8 @@
           "speechRecognitionPermission": "Allow Thunkd to use speech recognition."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "router": {},
