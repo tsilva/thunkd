@@ -1,19 +1,30 @@
 <div align="center">
-  <img src="assets/images/icon.png" alt="Thunkd" width="512"/>
+  <img src="logo.png" alt="thunkd" width="256"/>
 
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
   [![Expo SDK](https://img.shields.io/badge/Expo-SDK%2054-000020.svg?logo=expo)](https://expo.dev)
-  [![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web-lightgrey.svg)](https://reactnative.dev)
+  [![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB.svg?logo=react&logoColor=white)](https://reactnative.dev)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+  [![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20Web-lightgrey.svg)](https://reactnative.dev)
 
-  **Capture thoughts instantly and send them straight to your inbox**
+  **⚡ Capture thoughts instantly and send them straight to your inbox 💭**
 
   [Google Cloud Setup](docs/google-cloud-setup.md)
 </div>
 
 ---
 
-## Overview
+## 📖 Table of Contents
+
+- [Overview](#-overview)
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [Project Structure](#-project-structure)
+- [Tech Stack](#-tech-stack)
+- [Building](#-building)
+- [License](#-license)
+
+## 💡 Overview
 
 **The Pain:** You have a fleeting thought — a to-do, an idea, a reminder — but by the time you open a notes app, find the right folder, and type it out, the moment is gone.
 
@@ -21,16 +32,16 @@
 
 **The Result:** Zero-friction capture. No accounts to manage, no syncing, no organizing. Your inbox *is* the inbox.
 
-## Features
+## ✨ Features
 
-- **Voice capture** — tap the mic and speak, Thunkd transcribes in real-time via on-device speech recognition
-- **One-tap send** — thoughts go straight to your own Gmail inbox as emails
-- **Email queue with retry** — messages queue up and retry automatically if the network drops
-- **Google OAuth** — sign in once with your Google account (native Google Sign-In SDK, tokens stored securely)
-- **Minimal UI** — one screen, one text field, one button. Nothing else.
-- **Cross-platform** — runs on iOS, Android, and web
+- ⚡ **Voice capture** — tap the mic and speak, Thunkd transcribes in real-time via on-device speech recognition
+- 📨 **One-tap send** — thoughts go straight to your own Gmail inbox as emails
+- 🔄 **Email queue with retry** — messages queue up and retry automatically if the network drops
+- 🔐 **Google OAuth** — sign in once with your Google account (native Google Sign-In SDK, tokens stored securely)
+- 🎯 **Minimal UI** — one screen, one text field, one button. Nothing else.
+- 📱 **Cross-platform** — runs on iOS, Android, and web
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -66,7 +77,7 @@ Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press `i`/`a
 
 See [Google Cloud Setup](docs/google-cloud-setup.md) for step-by-step instructions on creating these credentials.
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 app/
@@ -85,7 +96,7 @@ scripts/
   generate-icons.mjs     # App icon generation script
 ```
 
-## Tech Stack
+## 🛠 Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -97,7 +108,7 @@ scripts/
 | Speech | [expo-speech-recognition](https://github.com/jamsch/expo-speech-recognition) |
 | Storage | [expo-secure-store](https://docs.expo.dev/versions/latest/sdk/securestore/) (tokens) |
 
-## Building
+## 🏗 Building
 
 Thunkd uses [EAS Build](https://docs.expo.dev/build/introduction/) for native builds.
 
@@ -124,6 +135,6 @@ eas update --branch production --message "description of changes"
 
 Run `make help` to see all available commands, including `make start`, `make build-production`, `make icons`, and more.
 
-## License
+## 📄 License
 
 [MIT](LICENSE) &copy; Tiago Silva
