@@ -1,4 +1,7 @@
-import * as AuthSession from "expo-auth-session";
+import {
+  GoogleSignin,
+  isSuccessResponse,
+} from "@react-native-google-signin/google-signin";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
@@ -26,28 +29,11 @@ const STORE_KEYS = {
   userName: "google_user_name",
 } as const;
 
-export const googleAuthConfig: AuthSession.DiscoveryDocument = {
-  authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-  tokenEndpoint: "https://oauth2.googleapis.com/token",
-  revocationEndpoint: "https://oauth2.googleapis.com/revoke",
-};
-
-export const GOOGLE_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "";
-export const GOOGLE_CLIENT_SECRET =
+const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "";
+const WEB_CLIENT_SECRET =
   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET ?? "";
-export const GOOGLE_IOS_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "";
-export const GOOGLE_ANDROID_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? "";
 
-export function getClientIdForPlatform(): string {
-  return Platform.select({
-    android: GOOGLE_ANDROID_CLIENT_ID,
-    ios: GOOGLE_IOS_CLIENT_ID,
-    default: GOOGLE_CLIENT_ID,
-  }) || GOOGLE_CLIENT_ID;
-}
+const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 export const SCOPES = [
   "openid",
@@ -61,23 +47,64 @@ export type UserInfo = {
   name: string;
 };
 
-export async function storeTokens(response: AuthSession.TokenResponse) {
-  const expiresAt = response.expiresIn
-    ? String(Date.now() + response.expiresIn * 1000)
+GoogleSignin.configure({
+  webClientId: WEB_CLIENT_ID,
+  offlineAccess: true,
+  scopes: SCOPES,
+});
+
+/**
+ * Trigger the native Google Sign-In flow, then exchange the server auth code
+ * for access + refresh tokens via Google's token endpoint.
+ */
+export async function signIn(): Promise<UserInfo> {
+  const response = await GoogleSignin.signIn();
+  if (!isSuccessResponse(response)) {
+    throw new Error("Google Sign-In was cancelled");
+  }
+
+  const { serverAuthCode } = response.data;
+  if (!serverAuthCode) {
+    throw new Error("No server auth code returned — check webClientId and offlineAccess config");
+  }
+
+  // Exchange auth code for tokens
+  const tokenRes = await fetch(TOKEN_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code: serverAuthCode,
+      client_id: WEB_CLIENT_ID,
+      client_secret: WEB_CLIENT_SECRET,
+      grant_type: "authorization_code",
+      redirect_uri: "",
+    }).toString(),
+  });
+
+  if (!tokenRes.ok) {
+    const err = await tokenRes.text();
+    throw new Error(`Token exchange failed: ${err}`);
+  }
+
+  const tokens = await tokenRes.json();
+
+  const expiresAt = tokens.expires_in
+    ? String(Date.now() + tokens.expires_in * 1000)
     : "";
 
   await Promise.all([
-    store.setItemAsync(STORE_KEYS.accessToken, response.accessToken),
-    response.refreshToken
-      ? store.setItemAsync(
-          STORE_KEYS.refreshToken,
-          response.refreshToken,
-        )
+    store.setItemAsync(STORE_KEYS.accessToken, tokens.access_token),
+    tokens.refresh_token
+      ? store.setItemAsync(STORE_KEYS.refreshToken, tokens.refresh_token)
       : Promise.resolve(),
     expiresAt
       ? store.setItemAsync(STORE_KEYS.expiresAt, expiresAt)
       : Promise.resolve(),
   ]);
+
+  const profile = await fetchUserProfile();
+  await storeUserInfo(profile);
+  return profile;
 }
 
 export async function getValidAccessToken(): Promise<string> {
@@ -96,16 +123,39 @@ export async function getValidAccessToken(): Promise<string> {
 
   if (!refreshToken) throw new Error("Session expired — please sign in again");
 
-  const refreshed = await AuthSession.refreshAsync(
-    {
-      clientId: getClientIdForPlatform(),
-      refreshToken,
-    },
-    googleAuthConfig,
-  );
+  const res = await fetch(TOKEN_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: WEB_CLIENT_ID,
+      client_secret: WEB_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }).toString(),
+  });
 
-  await storeTokens(refreshed);
-  return refreshed.accessToken;
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Token refresh failed: ${err}`);
+  }
+
+  const refreshed = await res.json();
+
+  const newExpiresAt = refreshed.expires_in
+    ? String(Date.now() + refreshed.expires_in * 1000)
+    : "";
+
+  await Promise.all([
+    store.setItemAsync(STORE_KEYS.accessToken, refreshed.access_token),
+    refreshed.refresh_token
+      ? store.setItemAsync(STORE_KEYS.refreshToken, refreshed.refresh_token)
+      : Promise.resolve(),
+    newExpiresAt
+      ? store.setItemAsync(STORE_KEYS.expiresAt, newExpiresAt)
+      : Promise.resolve(),
+  ]);
+
+  return refreshed.access_token;
 }
 
 export async function fetchUserProfile(): Promise<UserInfo> {
@@ -140,9 +190,12 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 export async function clearAuth() {
+  try {
+    await GoogleSignin.signOut();
+  } catch {
+    // Ignore — user may not have an active native session
+  }
   await Promise.all(
-    Object.values(STORE_KEYS).map((key) =>
-      store.deleteItemAsync(key),
-    ),
+    Object.values(STORE_KEYS).map((key) => store.deleteItemAsync(key)),
   );
 }

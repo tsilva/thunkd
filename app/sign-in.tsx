@@ -1,21 +1,16 @@
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-import { useEffect } from "react";
-import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { router } from "expo-router";
-import {
-  GOOGLE_ANDROID_CLIENT_ID,
-  GOOGLE_CLIENT_ID,
-  GOOGLE_IOS_CLIENT_ID,
-  SCOPES,
-  fetchUserProfile,
-  isAuthenticated,
-  storeTokens,
-  storeUserInfo,
-} from "../lib/auth";
-
-WebBrowser.maybeCompleteAuthSession();
+import { isAuthenticated, signIn } from "../lib/auth";
 
 function GoogleLogo({ size = 20 }: { size?: number }) {
   return (
@@ -41,16 +36,8 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
 }
 
 export default function SignInScreen() {
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: GOOGLE_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-    iosClientId: GOOGLE_IOS_CLIENT_ID,
-    scopes: SCOPES,
-    extraParams: {
-      access_type: "offline",
-      prompt: "consent",
-    },
-  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     isAuthenticated().then((authed) => {
@@ -58,16 +45,21 @@ export default function SignInScreen() {
     });
   }, []);
 
-  useEffect(() => {
-    if (response?.type !== "success" || !response.authentication) return;
-
-    (async () => {
-      await storeTokens(response.authentication!);
-      const profile = await fetchUserProfile();
-      await storeUserInfo(profile);
+  async function handleSignIn() {
+    setLoading(true);
+    setError(null);
+    try {
+      await signIn();
       router.replace("/");
-    })();
-  }, [response]);
+    } catch (e: any) {
+      // Don't show error for user cancellation
+      if (e?.code !== "SIGN_IN_CANCELLED") {
+        setError(e?.message ?? "Sign-in failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -81,17 +73,23 @@ export default function SignInScreen() {
       <Pressable
         style={({ pressed }) => [
           styles.button,
-          !request && styles.buttonDisabled,
+          loading && styles.buttonDisabled,
           pressed && styles.buttonPressed,
         ]}
-        onPress={() => promptAsync()}
-        disabled={!request}
+        onPress={handleSignIn}
+        disabled={loading}
       >
-        <View style={styles.logoContainer}>
-          <GoogleLogo size={20} />
-        </View>
+        {loading ? (
+          <ActivityIndicator size="small" color="#1F1F1F" style={styles.logoContainer} />
+        ) : (
+          <View style={styles.logoContainer}>
+            <GoogleLogo size={20} />
+          </View>
+        )}
         <Text style={styles.buttonText}>Sign in with Google</Text>
       </Pressable>
+
+      {error && <Text style={styles.error}>{error}</Text>}
 
       <Text style={styles.footnote}>
         We only use Gmail to send thoughts to your own inbox
@@ -151,6 +149,12 @@ const styles = StyleSheet.create({
     color: "#1F1F1F",
     fontWeight: "500",
     fontFamily: Platform.OS === "android" ? "Roboto" : undefined,
+  },
+  error: {
+    fontSize: 13,
+    color: "#D32F2F",
+    marginTop: 16,
+    textAlign: "center",
   },
   footnote: {
     fontSize: 13,
