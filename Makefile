@@ -1,6 +1,7 @@
 .PHONY: help install ci start start-clear ios android web lint typecheck check \
 	build-preview-android build-preview-ios \
 	build-production-android build-production-ios build-production \
+	submit-android submit-ios \
 	update-preview update-production icons clean setup setup-gcloud
 
 help: ## Show this help
@@ -50,6 +51,12 @@ build-production-ios: ## EAS build: iOS production
 
 build-production: ## EAS build: all platforms production
 	eas build --platform all --profile production
+
+submit-android: ## Submit Android build to Play Store (internal track)
+	eas submit --platform android --profile production
+
+submit-ios: ## Submit iOS build to App Store
+	eas submit --platform ios --profile production
 
 update-preview: ## OTA update to preview (msg="description")
 	eas update --branch preview --message "$(msg)"

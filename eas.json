@@ -17,5 +17,13 @@
       }
     },
     "production": {}
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./service-account-play-store.json",
+        "track": "internal"
+      }
+    }
   }
 }

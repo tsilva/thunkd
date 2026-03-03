@@ -33,6 +33,8 @@ make check            # lint + typecheck
 make setup-gcloud     # Interactive Google Cloud OAuth setup
 make icons            # Generate app icons from source SVG
 make build-production # EAS production build (all platforms)
+make submit-android   # Submit Android build to Play Store (internal track)
+make submit-ios       # Submit iOS build to App Store
 make clean            # Remove node_modules and caches
 ```
 
@@ -77,7 +79,13 @@ Run `make setup-gcloud` for interactive setup.
 ## CI/CD
 
 - **PR checks** (`.github/workflows/ci.yml`): PII scan
-- **Production builds** (`.github/workflows/eas-build.yml`): EAS Build on push to main
+- **Production builds** (`.github/workflows/eas-build.yml`): EAS Build on push to main (Play Store submission steps are commented out pending service account key setup)
+
+## Play Store
+
+- `android.versionCode` in `app.json` must be incremented for each Play Store upload
+- Privacy policy hosted at a GitHub Gist, URL stored in `expo.extra.privacyPolicyUrl` in `app.json`
+- EAS Submit configured for Android internal track; requires `service-account-play-store.json` (gitignored)
 
 ## Maintenance
 
