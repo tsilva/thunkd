@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  BackHandler,
   KeyboardAvoidingView,
   Modal,
   Pressable,
@@ -33,6 +34,9 @@ export default function HomeScreen() {
   const [authed, setAuthed] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
+
+  // Refs
+  const textInputRef = useRef<TextInput>(null);
 
   // Speech recognition state
   const [recording, setRecording] = useState(false);
@@ -110,6 +114,16 @@ export default function HomeScreen() {
     return () => setErrorHandler(null);
   }, []);
 
+  // Prevent back button from dismissing keyboard on Android
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener("hardwareBackPress", () => {
+      // Always return true to prevent default behavior
+      // Keyboard stays open, nothing happens on back press
+      return true;
+    });
+    return () => backHandler.remove();
+  }, []);
+
   const handleSend = () => {
     if (!text.trim() || !userInfo?.email) return;
     setError(null);
@@ -151,7 +165,11 @@ export default function HomeScreen() {
       visible={settingsVisible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={() => setSettingsVisible(false)}
+      onRequestClose={() => {
+        setSettingsVisible(false);
+        // Restore keyboard focus when modal closes
+        setTimeout(() => textInputRef.current?.focus(), 100);
+      }}
     >
       <SafeAreaView style={styles.safe}>
         <View style={styles.modalContainer}>
@@ -163,7 +181,11 @@ export default function HomeScreen() {
           <View style={styles.modalButtons}>
             <Pressable
               style={styles.cancelButton}
-              onPress={() => setSettingsVisible(false)}
+              onPress={() => {
+                setSettingsVisible(false);
+                // Restore keyboard focus when modal closes
+                setTimeout(() => textInputRef.current?.focus(), 100);
+              }}
             >
               <Text style={styles.cancelButtonText}>Close</Text>
             </Pressable>
@@ -186,13 +208,19 @@ export default function HomeScreen() {
         <View style={styles.container}>
           <View style={styles.textInputWrapper}>
             <TextInput
+              ref={textInputRef}
               style={styles.textInput}
               placeholder="What's on your mind?"
               placeholderTextColor="#999"
               multiline
               autoFocus
+              blurOnSubmit={false}
               value={text}
               onChangeText={setText}
+              onBlur={() => {
+                // Always refocus to keep keyboard open
+                textInputRef.current?.focus();
+              }}
             />
           </View>
 
