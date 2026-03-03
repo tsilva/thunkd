@@ -41,6 +41,14 @@ export const GOOGLE_IOS_CLIENT_ID =
 export const GOOGLE_ANDROID_CLIENT_ID =
   process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? "";
 
+export function getClientIdForPlatform(): string {
+  return Platform.select({
+    android: GOOGLE_ANDROID_CLIENT_ID,
+    ios: GOOGLE_IOS_CLIENT_ID,
+    default: GOOGLE_CLIENT_ID,
+  }) || GOOGLE_CLIENT_ID;
+}
+
 export const SCOPES = [
   "openid",
   "https://www.googleapis.com/auth/userinfo.email",
@@ -90,7 +98,7 @@ export async function getValidAccessToken(): Promise<string> {
 
   const refreshed = await AuthSession.refreshAsync(
     {
-      clientId: GOOGLE_CLIENT_ID,
+      clientId: getClientIdForPlatform(),
       refreshToken,
     },
     googleAuthConfig,
