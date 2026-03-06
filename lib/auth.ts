@@ -51,6 +51,7 @@ GoogleSignin.configure({
   webClientId: WEB_CLIENT_ID,
   offlineAccess: true,
   scopes: SCOPES,
+  forceCodeForRefreshToken: true,
 });
 
 /**
@@ -136,7 +137,9 @@ export async function getValidAccessToken(): Promise<string> {
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Token refresh failed: ${err}`);
+    // Clear auth data on refresh failure to force fresh sign-in
+    await clearAuth();
+    throw new Error(`Session expired — please sign in again`);
   }
 
   const refreshed = await res.json();
@@ -185,8 +188,20 @@ export async function getStoredUserInfo(): Promise<UserInfo | null> {
 }
 
 export async function isAuthenticated(): Promise<boolean> {
-  const token = await store.getItemAsync(STORE_KEYS.accessToken);
-  return Boolean(token);
+  const [accessToken, expiresAtStr] = await Promise.all([
+    store.getItemAsync(STORE_KEYS.accessToken),
+    store.getItemAsync(STORE_KEYS.expiresAt),
+  ]);
+  
+  if (!accessToken) return false;
+  
+  // Check if token is expired
+  const expiresAt = expiresAtStr ? Number(expiresAtStr) : 0;
+  if (expiresAt > 0 && Date.now() >= expiresAt) {
+    return false;
+  }
+  
+  return true;
 }
 
 export async function clearAuth() {
