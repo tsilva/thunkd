@@ -31,13 +31,14 @@
 
 **The Solution:** Thunkd is a single-screen mobile app. Open it, speak or type your thought, tap Send. It lands in your Gmail inbox in seconds.
 
-**The Result:** Zero-friction capture. No accounts to manage, no syncing, no organizing. Your inbox *is* the inbox.
+**The Result:** Zero-friction capture. No accounts to manage, no syncing, no organizing. Your inbox *is* the inbox, with a lightweight sent-message history for the current session.
 
 ## ✨ Features
 
 - ⚡ **Voice capture** — tap the mic and speak, Thunkd transcribes in real-time via on-device speech recognition
 - 📨 **One-tap send** — thoughts go straight to your own Gmail inbox as emails
 - 🔄 **Email queue with retry** — messages queue up and retry automatically if the network drops
+- 🗂️ **Session message history** — review messages that were successfully sent during the current app session
 - 🔐 **Google OAuth** — sign in once with your Google account (native Google Sign-In SDK, tokens stored securely)
 - 🎯 **Minimal UI** — one screen, one text field, one button. Nothing else.
 - 📱 **Cross-platform** — runs on iOS, Android, and web

@@ -6,9 +6,15 @@ const KEEP_AWAKE_TAG = "email-queue";
 const RETRY_DELAY_MS = 1000;
 
 type QueueItem = { text: string; userEmail: string };
+export type SentItem = {
+  id: string;
+  text: string;
+  sentAt: number;
+};
 type Listener = () => void;
 
 let queue: QueueItem[] = [];
+let sentHistory: SentItem[] = [];
 let processing = false;
 let listeners: Listener[] = [];
 let errorHandler: ((msg: string) => void) | null = null;
@@ -40,6 +46,16 @@ async function processQueue() {
     }
 
     queue = queue.slice(1);
+    if (ok) {
+      sentHistory = [
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          text: item.text,
+          sentAt: Date.now(),
+        },
+        ...sentHistory,
+      ];
+    }
     notify();
   }
 
@@ -69,7 +85,12 @@ function getPendingCount() {
   return queue.length;
 }
 
+function getSentHistory() {
+  return sentHistory;
+}
+
 export function useEmailQueue() {
   const pendingCount = useSyncExternalStore(subscribe, getPendingCount);
-  return { pendingCount, enqueue };
+  const sentItems = useSyncExternalStore(subscribe, getSentHistory);
+  return { pendingCount, enqueue, sentItems };
 }
