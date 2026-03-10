@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -29,7 +30,7 @@ export default function HomeScreen() {
 
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { pendingCount, enqueue } = useEmailQueue();
+  const { pendingCount, enqueue, sentItems } = useEmailQueue();
 
   // Auth state
   const [authChecked, setAuthChecked] = useState(false);
@@ -44,6 +45,8 @@ export default function HomeScreen() {
   const [recording, setRecording] = useState(false);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const baseTextRef = useRef("");
+  const micPressActiveRef = useRef(false);
+  const recordingRequestedRef = useRef(false);
 
   // Pulse animation for mic button
   useEffect(() => {
@@ -61,8 +64,16 @@ export default function HomeScreen() {
   }, [recording, pulseAnim]);
 
   // Speech recognition event listeners
-  useSpeechRecognitionEvent("start", () => setRecording(true));
-  useSpeechRecognitionEvent("end", () => setRecording(false));
+  useSpeechRecognitionEvent("start", () => {
+    setRecording(true);
+    if (!micPressActiveRef.current) {
+      ExpoSpeechRecognitionModule?.stop();
+    }
+  });
+  useSpeechRecognitionEvent("end", () => {
+    recordingRequestedRef.current = false;
+    setRecording(false);
+  });
   useSpeechRecognitionEvent("result", (ev) => {
     const transcript = ev.results[0]?.transcript ?? "";
     if (!transcript) return;
@@ -76,27 +87,39 @@ export default function HomeScreen() {
     }
   });
   useSpeechRecognitionEvent("error", (ev) => {
+    recordingRequestedRef.current = false;
     setError(`Speech error: ${ev.error}`);
     setRecording(false);
   });
 
-  const handleToggleRecording = async () => {
-    if (!ExpoSpeechRecognitionModule) return;
-    if (recording) {
-      ExpoSpeechRecognitionModule.stop();
-      return;
-    }
+  const handleStartRecording = async () => {
+    micPressActiveRef.current = true;
+    if (!ExpoSpeechRecognitionModule || recording || recordingRequestedRef.current) return;
+    setError(null);
     const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
     if (!granted) {
       setError("Microphone permission is required for voice input.");
       return;
     }
+    if (!micPressActiveRef.current) return;
     baseTextRef.current = text;
-    ExpoSpeechRecognitionModule.start({
-      interimResults: true,
-      continuous: false,
-      addsPunctuation: true,
-    });
+    recordingRequestedRef.current = true;
+    try {
+      ExpoSpeechRecognitionModule.start({
+        interimResults: true,
+        continuous: false,
+        addsPunctuation: true,
+      });
+    } catch (err) {
+      recordingRequestedRef.current = false;
+      setError(err instanceof Error ? err.message : "Unable to start recording.");
+    }
+  };
+
+  const handleStopRecording = () => {
+    micPressActiveRef.current = false;
+    if (!ExpoSpeechRecognitionModule || (!recording && !recordingRequestedRef.current)) return;
+    ExpoSpeechRecognitionModule.stop();
   };
 
   useEffect(() => {
@@ -127,7 +150,7 @@ export default function HomeScreen() {
   }, []);
 
   const handleSend = () => {
-    if (!text.trim() || !userInfo?.email) return;
+    if (recording || !text.trim() || !userInfo?.email) return;
     setError(null);
     enqueue(text.trim(), userInfo.email);
     setText("");
@@ -140,6 +163,12 @@ export default function HomeScreen() {
     router.replace("/sign-in");
   };
 
+  const formatSentTime = (sentAt: number) =>
+    new Date(sentAt).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
   if (!authChecked) {
     return (
       <View style={styles.setupContainer}>
@@ -151,6 +180,8 @@ export default function HomeScreen() {
   if (!authed) {
     return <Redirect href="/sign-in" />;
   }
+
+  const sendDisabled = recording || !text.trim();
 
   const gearButton = (
     <Pressable
@@ -246,12 +277,47 @@ export default function HomeScreen() {
             </View>
           )}
 
+          {recording && (
+            <View style={styles.recordingIndicator}>
+              <View style={styles.recordingDot} />
+              <Text style={styles.recordingText}>Recording...</Text>
+            </View>
+          )}
+
+          {sentItems.length > 0 && (
+            <View style={styles.historySection}>
+              <View style={styles.historyHeader}>
+                <Text style={styles.historyTitle}>Previously sent</Text>
+                <Text style={styles.historyCount}>{sentItems.length} this session</Text>
+              </View>
+              <ScrollView
+                style={styles.historyList}
+                contentContainerStyle={styles.historyListContent}
+                keyboardShouldPersistTaps="handled"
+              >
+                {sentItems.map((item, index) => (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.historyItem,
+                      index < sentItems.length - 1 && styles.historyItemBorder,
+                    ]}
+                  >
+                    <Text style={styles.historyText}>{item.text}</Text>
+                    <Text style={styles.historyTime}>{formatSentTime(item.sentAt)}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           <View style={styles.buttonRow}>
             {speechAvailable && (
               <Animated.View style={{ opacity: pulseAnim }}>
                 <Pressable
                   style={[styles.micButton, recording && styles.micButtonActive]}
-                  onPress={handleToggleRecording}
+                  onPressIn={handleStartRecording}
+                  onPressOut={handleStopRecording}
                 >
                   <Ionicons
                     name={recording ? "mic" : "mic-outline"}
@@ -262,9 +328,9 @@ export default function HomeScreen() {
               </Animated.View>
             )}
             <Pressable
-              style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]}
+              style={[styles.sendButton, sendDisabled && styles.sendButtonDisabled]}
               onPress={handleSend}
-              disabled={!text.trim()}
+              disabled={sendDisabled}
             >
               <Text style={styles.sendButtonText}>Send</Text>
             </Pressable>
@@ -318,6 +384,72 @@ const styles = StyleSheet.create({
   pendingText: {
     color: "#999",
     fontSize: 13,
+  },
+  historySection: {
+    marginBottom: 12,
+  },
+  historyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  historyTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#222",
+  },
+  historyCount: {
+    fontSize: 12,
+    color: "#777",
+  },
+  historyList: {
+    maxHeight: 180,
+    borderWidth: 1,
+    borderColor: "#e5e5e5",
+    borderRadius: 12,
+    backgroundColor: "#fafafa",
+  },
+  historyListContent: {
+    paddingHorizontal: 12,
+  },
+  historyItem: {
+    paddingVertical: 12,
+    gap: 4,
+  },
+  historyItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#ececec",
+  },
+  historyText: {
+    fontSize: 14,
+    color: "#111",
+  },
+  historyTime: {
+    fontSize: 12,
+    color: "#777",
+  },
+  recordingIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 8,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#fdeaea",
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "#d00",
+  },
+  recordingText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#900",
   },
   buttonRow: {
     flexDirection: "row",
