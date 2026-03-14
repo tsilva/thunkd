@@ -1,250 +1,185 @@
 #!/usr/bin/env node
 
 /**
- * Generate app icons for Mobile Capture using OpenRouter + Gemini image generation.
+ * Rebuild app assets from the checked-in Gemini-generated source images.
+ *
+ * Source images are expected at:
+ *   assets/branding/icon-source.png
+ *   assets/branding/adaptive-source.png
+ *
+ * They were generated with OpenRouter's `google/gemini-3.1-flash-image-preview`
+ * model, then normalized locally into the platform assets used by Expo.
  *
  * Usage:
- *   OPENROUTER_API_KEY=or-... node scripts/generate-icons.mjs
- *
- * Generates:
- *   assets/images/icon.png          – 1024x1024, App Store icon (rounded corners, transparent)
- *   assets/images/adaptive-icon.png – 1024x1024, Android adaptive icon foreground (rounded corners, transparent)
- *   assets/images/splash-icon.png   – 512x512,   Splash screen logo (rounded corners, transparent)
- *   assets/images/favicon.png       – 48x48,     Web favicon (rounded corners, transparent)
+ *   node scripts/generate-icons.mjs
  */
 
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
-const ASSETS = resolve(ROOT, "assets", "images");
+const BRANDING = resolve(ROOT, "assets", "branding");
+const IMAGES = resolve(ROOT, "assets", "images");
+const ICON_SOURCE = resolve(BRANDING, "icon-source.png");
+const ADAPTIVE_SOURCE = resolve(BRANDING, "adaptive-source.png");
 
-// Load .env file
-try {
-  const envContent = await readFile(resolve(ROOT, ".env"), "utf-8");
-  for (const line of envContent.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx === -1) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const val = trimmed.slice(eqIdx + 1).trim();
-    if (!process.env[key]) process.env[key] = val;
-  }
-} catch {}
+function neutralToTransparent(data, info, minAverage, maxSpread) {
+  const output = Buffer.from(data);
 
-const API_KEY = process.env.OPENROUTER_API_KEY;
-if (!API_KEY) {
-  console.error("Error: OPENROUTER_API_KEY environment variable is required.");
-  process.exit(1);
-}
+  for (let index = 0; index < output.length; index += info.channels) {
+    const r = output[index];
+    const g = output[index + 1];
+    const b = output[index + 2];
+    const a = output[index + 3] ?? 255;
+    const spread = Math.max(r, g, b) - Math.min(r, g, b);
+    const average = (r + g + b) / 3;
 
-const MODEL = "google/gemini-3.1-flash-image-preview";
-const API_URL = "https://openrouter.ai/api/v1/chat/completions";
-
-const ICON_PROMPT = `Generate a striking, premium app icon for "thunkd" — a thought-capture app.
-The name "thunkd" means a thought just hit you, like a lightning bolt of inspiration.
-
-Design concept:
-- A bold, stylized lightning bolt striking into a thought bubble — the moment an idea lands
-- The lightning bolt should feel electric and alive, cutting diagonally through the icon
-- Background: rich deep purple-to-black gradient, moody and premium
-- Lightning bolt: electric bright yellow-gold (#FFD700) with a subtle white-hot core glow
-- Thought bubble: subtle, translucent, ghostly white outline — not the main focus, just framing the bolt
-- Style: sleek, high-contrast, dramatic — like a premium creative tool, NOT a generic corporate app
-- No text, no letters, no words
-- No rounded corners (iOS adds them)
-- No transparency — solid filled background
-- Square canvas, fills the entire frame edge to edge
-- Should look incredible at small sizes on a phone home screen
-- Think Notion meets Discord aesthetic — dark, bold, iconic`;
-
-const ADAPTIVE_PROMPT = `Generate an Android adaptive icon foreground layer for "thunkd" — a thought-capture app.
-
-Design concept:
-- Same identity: a bold stylized lightning bolt striking into a thought bubble
-- Lightning bolt: electric bright yellow-gold (#FFD700) with white-hot core
-- Thought bubble: subtle translucent white outline framing the bolt
-- TRANSPARENT background — the design floats on nothing
-- Center the design within the inner 66% of the canvas (Android crops outer edges)
-- No text, no letters, no words
-- Dramatic, high-contrast, sleek
-- Should be instantly recognizable at small sizes`;
-
-async function generateImage(prompt) {
-  console.log("  Calling Gemini...");
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: "user", content: prompt }],
-      modalities: ["image", "text"],
-      image_config: {
-        aspect_ratio: "1:1",
-        image_size: "1K",
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`OpenRouter API error ${res.status}: ${body}`);
-  }
-
-  const data = await res.json();
-  const choice = data.choices?.[0];
-
-  if (!choice) {
-    throw new Error(`No choices in response: ${JSON.stringify(data)}`);
-  }
-
-  // Extract base64 image from the response
-  // Images can be in choice.message.images[] or inline in content as multipart
-  const images = choice.message?.images;
-  if (images?.length > 0) {
-    const url = images[0].image_url?.url ?? images[0].url;
-    if (url) return extractBase64(url);
-  }
-
-  // Some models return images inline in content array
-  const content = choice.message?.content;
-  if (Array.isArray(content)) {
-    for (const part of content) {
-      if (part.type === "image_url") {
-        const url = part.image_url?.url ?? part.url;
-        if (url) return extractBase64(url);
-      }
+    if (a > 0 && average >= minAverage && spread <= maxSpread) {
+      output[index + 3] = 0;
     }
   }
 
-  // Try parsing base64 from string content
-  if (typeof content === "string" && content.includes("data:image")) {
-    return extractBase64(content);
-  }
-
-  throw new Error(
-    `Could not find image in response: ${JSON.stringify(choice.message, null, 2).slice(0, 500)}`
-  );
+  return output;
 }
 
-function extractBase64(dataUrl) {
-  const match = dataUrl.match(
-    /data:image\/(png|jpeg|webp);base64,(.+)/s
-  );
-  if (match) return Buffer.from(match[2], "base64");
-  // If it's raw base64 without prefix
-  if (/^[A-Za-z0-9+/]+=*$/.test(dataUrl.trim())) {
-    return Buffer.from(dataUrl.trim(), "base64");
-  }
-  throw new Error("Could not extract base64 image data");
+async function cleanNeutralBackground(inputPath, minAverage, maxSpread) {
+  const { data, info } = await sharp(inputPath)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const cleaned = neutralToTransparent(data, info, minAverage, maxSpread);
+  return sharp(cleaned, {
+    raw: {
+      width: info.width,
+      height: info.height,
+      channels: info.channels,
+    },
+  })
+    .png()
+    .toBuffer();
 }
 
-async function resizeWithCanvas(inputBuffer, width, height) {
-  // Use sharp if available, otherwise fall back to sips (macOS built-in)
-  try {
-    const sharp = await import("sharp");
-    return await sharp
-      .default(inputBuffer)
-      .resize(width, height, { fit: "cover" })
-      .png()
-      .toBuffer();
-  } catch {
-    // Fallback: write to temp file, use sips, read back
-    const { tmpdir } = await import("node:os");
-    const { join } = await import("node:path");
-    const { readFile } = await import("node:fs/promises");
-    const { execSync } = await import("node:child_process");
+async function buildAppIcon() {
+  const cleaned = await cleanNeutralBackground(ICON_SOURCE, 236, 20);
 
-    const tmpIn = join(tmpdir(), `icon-resize-in-${Date.now()}.png`);
-    const tmpOut = join(tmpdir(), `icon-resize-out-${Date.now()}.png`);
-
-    await writeFile(tmpIn, inputBuffer);
-    execSync(`sips -z ${height} ${width} "${tmpIn}" --out "${tmpOut}"`, {
-      stdio: "pipe",
-    });
-    const result = await readFile(tmpOut);
-
-    // Clean up temp files
-    await Promise.allSettled([
-      import("node:fs/promises").then((fs) => fs.unlink(tmpIn)),
-      import("node:fs/promises").then((fs) => fs.unlink(tmpOut)),
-    ]);
-
-    return result;
-  }
+  return sharp({
+    create: {
+      width: 1024,
+      height: 1024,
+      channels: 4,
+      background: "#05081B",
+    },
+  })
+    .composite([{ input: cleaned }])
+    .png()
+    .toBuffer();
 }
 
-async function applyRoundedCorners(inputBuffer, radiusPercent = 22) {
-  try {
-    const sharp = (await import("sharp")).default;
-    const meta = await sharp(inputBuffer).metadata();
-    const { width, height } = meta;
-    const radius = Math.round(Math.min(width, height) * (radiusPercent / 100));
+async function buildAdaptiveForeground() {
+  return cleanNeutralBackground(ADAPTIVE_SOURCE, 184, 30);
+}
 
-    const mask = Buffer.from(
-      `<svg width="${width}" height="${height}">
-         <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" ry="${radius}" fill="white"/>
-       </svg>`
-    );
+async function buildMonochromeIcon(inputBuffer) {
+  const { data, info } = await sharp(inputBuffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
 
-    return sharp(inputBuffer)
-      .ensureAlpha()
-      .composite([{ input: mask, blend: "dest-in" }])
-      .png()
-      .toBuffer();
-  } catch {
-    // If sharp unavailable, return as-is (graceful degradation)
-    console.warn("  Warning: could not apply rounded corners (sharp unavailable)");
-    return inputBuffer;
+  const output = Buffer.from(data);
+
+  for (let index = 0; index < output.length; index += info.channels) {
+    const alpha = output[index + 3] ?? 255;
+    output[index] = 0;
+    output[index + 1] = 0;
+    output[index + 2] = 0;
+    output[index + 3] = alpha > 0 ? 255 : 0;
   }
+
+  return sharp(output, {
+    raw: {
+      width: info.width,
+      height: info.height,
+      channels: info.channels,
+    },
+  })
+    .png()
+    .toBuffer();
+}
+
+async function buildLogo(iconBuffer) {
+  const shell = Buffer.from(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560">
+      <rect x="40" y="60" width="1520" height="440" rx="220" fill="#F5F8FD"/>
+      <rect x="40" y="60" width="1520" height="440" rx="220" fill="none" stroke="#D8E2EF" stroke-width="6"/>
+      <text
+        x="470"
+        y="286"
+        fill="#10203A"
+        font-family="Avenir Next, Avenir, Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="188"
+        font-weight="800"
+        letter-spacing="-5"
+      >thunkd</text>
+      <text
+        x="480"
+        y="364"
+        fill="#4E6A85"
+        font-family="Avenir Next, Avenir, Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="40"
+        font-weight="600"
+        letter-spacing="5"
+      >CAPTURE THE THOUGHT. SEND THE THOUGHT.</text>
+      <rect x="481" y="395" width="232" height="14" rx="7" fill="#2C58D6"/>
+      <circle cx="738" cy="402" r="7" fill="#F2C343"/>
+    </svg>
+  `);
+
+  const badge = await sharp(iconBuffer).resize(300, 300).png().toBuffer();
+  const base = await sharp(shell).png().toBuffer();
+
+  return sharp(base)
+    .composite([{ input: badge, left: 110, top: 130 }])
+    .png()
+    .toBuffer();
 }
 
 async function main() {
-  await mkdir(ASSETS, { recursive: true });
+  await mkdir(IMAGES, { recursive: true });
+  await mkdir(BRANDING, { recursive: true });
 
-  // --- Step 1: Generate main icon ---
-  console.log("\n[1/2] Generating main app icon...");
-  const iconBuffer = await generateImage(ICON_PROMPT);
-  console.log(`  Got ${(iconBuffer.length / 1024).toFixed(0)} KB image`);
+  const icon = await buildAppIcon();
+  const adaptive = await buildAdaptiveForeground();
+  const monochrome = await buildMonochromeIcon(adaptive);
+  const splash = await sharp(adaptive).resize(512, 512).png().toBuffer();
+  const favicon = await sharp(icon).resize(48, 48).png().toBuffer();
+  const logo = await buildLogo(icon);
 
-  // Save icon.png at 1024x1024 with rounded transparent corners
-  const icon1024 = await resizeWithCanvas(iconBuffer, 1024, 1024);
-  const iconRounded = await applyRoundedCorners(icon1024);
-  await writeFile(resolve(ASSETS, "icon.png"), iconRounded);
-  console.log("  -> assets/images/icon.png (1024x1024)");
+  await writeFile(resolve(IMAGES, "icon.png"), icon);
+  console.log(`-> App icon: ${resolve(IMAGES, "icon.png")}`);
 
-  // Derive splash-icon.png at 512x512
-  const splash = await resizeWithCanvas(iconBuffer, 512, 512);
-  const splashRounded = await applyRoundedCorners(splash);
-  await writeFile(resolve(ASSETS, "splash-icon.png"), splashRounded);
-  console.log("  -> assets/images/splash-icon.png (512x512)");
+  await writeFile(resolve(IMAGES, "adaptive-icon.png"), adaptive);
+  console.log(`-> Android adaptive foreground: ${resolve(IMAGES, "adaptive-icon.png")}`);
 
-  // Derive favicon.png at 48x48
-  const favicon = await resizeWithCanvas(iconBuffer, 48, 48);
-  const faviconRounded = await applyRoundedCorners(favicon);
-  await writeFile(resolve(ASSETS, "favicon.png"), faviconRounded);
-  console.log("  -> assets/images/favicon.png (48x48)");
+  await writeFile(resolve(IMAGES, "adaptive-icon-monochrome.png"), monochrome);
+  console.log(
+    `-> Android adaptive monochrome: ${resolve(IMAGES, "adaptive-icon-monochrome.png")}`,
+  );
 
-  // --- Step 2: Generate adaptive icon ---
-  console.log("\n[2/2] Generating Android adaptive icon...");
-  const adaptiveBuffer = await generateImage(ADAPTIVE_PROMPT);
-  console.log(`  Got ${(adaptiveBuffer.length / 1024).toFixed(0)} KB image`);
+  await writeFile(resolve(IMAGES, "splash-icon.png"), splash);
+  console.log(`-> Splash mark: ${resolve(IMAGES, "splash-icon.png")}`);
 
-  const adaptive1024 = await resizeWithCanvas(adaptiveBuffer, 1024, 1024);
-  const adaptiveRounded = await applyRoundedCorners(adaptive1024);
-  await writeFile(resolve(ASSETS, "adaptive-icon.png"), adaptiveRounded);
-  console.log("  -> assets/images/adaptive-icon.png (1024x1024)");
+  await writeFile(resolve(IMAGES, "favicon.png"), favicon);
+  console.log(`-> Favicon: ${resolve(IMAGES, "favicon.png")}`);
 
-  console.log("\nDone! All icons generated in assets/images/");
+  await writeFile(resolve(ROOT, "logo.png"), logo);
+  console.log(`-> README logo: ${resolve(ROOT, "logo.png")}`);
 }
 
 main().catch((err) => {
-  console.error("\nFailed:", err.message);
+  console.error(err instanceof Error ? err.message : err);
   process.exit(1);
 });

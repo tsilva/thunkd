@@ -2,7 +2,7 @@
 	build-preview-android build-preview-ios \
 	build-production-android build-production-ios build-production \
 	submit-android submit-ios \
-	deploy-android update-preview update-production icons clean setup setup-gcloud
+	deploy-android update-preview update-production icons play-assets clean setup setup-gcloud
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -69,6 +69,9 @@ update-production: ## OTA update to production (msg="description")
 
 icons: ## Generate app icons
 	node scripts/generate-icons.mjs
+
+play-assets: ## Generate Google Play listing assets
+	node scripts/generate-play-assets.mjs
 
 setup: setup-gcloud ## Set up Google Cloud project and OAuth credentials
 

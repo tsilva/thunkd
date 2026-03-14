@@ -118,7 +118,12 @@ docs/
   google-cloud-setup.md  # Google Cloud Console configuration guide
 scripts/
   setup-gcloud.sh        # Interactive Google Cloud setup script
-  generate-icons.mjs     # App icon generation script
+  generate-icons.mjs     # Rebuild PNG assets from the brand source images
+  generate-play-assets.mjs # Build Google Play store graphics and screenshots
+assets/branding/
+  *.png                  # Source-of-truth brand images used to export app assets
+assets/google-play/
+  *.png                  # Play Store listing icon, feature graphic, and screenshots
 ```
 
 ## 🛠 Tech Stack
@@ -158,7 +163,7 @@ eas update --branch production --message "description of changes"
 
 ### Make Commands
 
-Run `make help` to see all available commands, including `make start`, `make build-production`, `make icons`, and more.
+Run `make help` to see all available commands, including `make start`, `make build-production`, `make icons`, `make play-assets`, and more. `make icons` regenerates `assets/images/*` and `logo.png` from `assets/branding/*.png`. `make play-assets` rebuilds the Google Play listing assets in `assets/google-play/`.
 
 ## 📄 License
 
