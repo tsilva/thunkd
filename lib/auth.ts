@@ -1,9 +1,19 @@
-import {
-  GoogleSignin,
-  isSuccessResponse,
-} from "@react-native-google-signin/google-signin";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { getMockUser, mockServicesEnabled } from "./dev-mode";
+
+type GoogleSigninModule = typeof import("@react-native-google-signin/google-signin");
+
+let googleSigninModule: GoogleSigninModule | null = null;
+
+try {
+  googleSigninModule = require("@react-native-google-signin/google-signin") as GoogleSigninModule;
+} catch {
+  // Native module unavailable (for example Expo Go)
+}
+
+const GoogleSignin = googleSigninModule?.GoogleSignin ?? null;
+const isSuccessResponse = googleSigninModule?.isSuccessResponse ?? null;
 
 // expo-secure-store doesn't support web — fall back to localStorage
 const store = {
@@ -47,7 +57,7 @@ export type UserInfo = {
   name: string;
 };
 
-GoogleSignin.configure({
+GoogleSignin?.configure({
   webClientId: WEB_CLIENT_ID,
   offlineAccess: true,
   scopes: SCOPES,
@@ -59,6 +69,26 @@ GoogleSignin.configure({
  * for access + refresh tokens via Google's token endpoint.
  */
 export async function signIn(): Promise<UserInfo> {
+  if (mockServicesEnabled) {
+    const mockUser = getMockUser();
+    const expiresAt = String(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+    await Promise.all([
+      store.setItemAsync(STORE_KEYS.accessToken, "mock-access-token"),
+      store.setItemAsync(STORE_KEYS.refreshToken, "mock-refresh-token"),
+      store.setItemAsync(STORE_KEYS.expiresAt, expiresAt),
+    ]);
+
+    await storeUserInfo(mockUser);
+    return mockUser;
+  }
+
+  if (!GoogleSignin || !isSuccessResponse) {
+    throw new Error(
+      "Google Sign-In requires a development build. Use Expo Go with mock services enabled or run a dev client.",
+    );
+  }
+
   const response = await GoogleSignin.signIn();
   if (!isSuccessResponse(response)) {
     throw new Error("Google Sign-In was cancelled");
@@ -109,6 +139,22 @@ export async function signIn(): Promise<UserInfo> {
 }
 
 export async function getValidAccessToken(): Promise<string> {
+  if (mockServicesEnabled) {
+    const [accessToken, expiresAtStr] = await Promise.all([
+      store.getItemAsync(STORE_KEYS.accessToken),
+      store.getItemAsync(STORE_KEYS.expiresAt),
+    ]);
+
+    if (!accessToken) throw new Error("Not signed in");
+
+    const expiresAt = expiresAtStr ? Number(expiresAtStr) : 0;
+    if (expiresAt > 0 && Date.now() >= expiresAt) {
+      throw new Error("Mock session expired");
+    }
+
+    return accessToken;
+  }
+
   const [accessToken, refreshToken, expiresAtStr] = await Promise.all([
     store.getItemAsync(STORE_KEYS.accessToken),
     store.getItemAsync(STORE_KEYS.refreshToken),
@@ -162,6 +208,10 @@ export async function getValidAccessToken(): Promise<string> {
 }
 
 export async function fetchUserProfile(): Promise<UserInfo> {
+  if (mockServicesEnabled) {
+    return getMockUser();
+  }
+
   const token = await getValidAccessToken();
   const res = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
     headers: { Authorization: `Bearer ${token}` },
@@ -205,10 +255,12 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 export async function clearAuth() {
-  try {
-    await GoogleSignin.signOut();
-  } catch {
-    // Ignore — user may not have an active native session
+  if (GoogleSignin) {
+    try {
+      await GoogleSignin.signOut();
+    } catch {
+      // Ignore — user may not have an active native session
+    }
   }
   await Promise.all(
     Object.values(STORE_KEYS).map((key) => store.deleteItemAsync(key)),

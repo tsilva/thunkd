@@ -40,6 +40,7 @@
 - 🔄 **Email queue with retry** — messages queue up and retry automatically if the network drops
 - 🗂️ **Session message history** — review messages that were successfully sent during the current app session
 - 🔐 **Google OAuth** — sign in once with your Google account (native Google Sign-In SDK, tokens stored securely)
+- 🧪 **Development mock mode** — use Expo Go or local dev with mocked sign-in and send flows to iterate on the UI safely
 - 🎯 **Minimal UI** — one screen, one text field, one button. Nothing else.
 - 📱 **Cross-platform** — runs on iOS, Android, and web
 
@@ -70,12 +71,25 @@ Scan the QR code with Expo Go (Android) or the Camera app (iOS), or press `i`/`a
 
 > **Note:** Voice capture requires a [development build](https://docs.expo.dev/develop/development-builds/introduction/) — it won't work in Expo Go since it needs the native `expo-speech-recognition` module.
 
+### UI Development in Expo Go
+
+If you just want to work on the UI, run the app with mocked auth and Gmail sending:
+
+```bash
+EXPO_PUBLIC_USE_MOCK_SERVICES=1 npx expo start
+```
+
+In Expo Go, mock services also enable automatically during development so you can sign in with a fake local account and exercise the send flow without real Gmail credentials. Override the fake account identity with `EXPO_PUBLIC_MOCK_USER_EMAIL` and `EXPO_PUBLIC_MOCK_USER_NAME` if needed.
+
 ### Environment Variables
 
 | Variable | Description |
 |----------|-------------|
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` | Google OAuth web client ID |
 | `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET` | Google OAuth web client secret |
+| `EXPO_PUBLIC_USE_MOCK_SERVICES` | Set to `1` or `true` in development to mock sign-in and Gmail send |
+| `EXPO_PUBLIC_MOCK_USER_EMAIL` | Optional fake email used by mock mode |
+| `EXPO_PUBLIC_MOCK_USER_NAME` | Optional fake name used by mock mode |
 
 See [Google Cloud Setup](docs/google-cloud-setup.md) for step-by-step instructions on creating these credentials.
 
@@ -110,8 +124,9 @@ app/
   index.tsx          # Home screen — text input, mic, send button
   sign-in.tsx        # Google OAuth sign-in screen
 lib/
-  auth.ts            # Google OAuth token management & secure storage
-  gmail.ts           # Gmail API — compose & send RFC 2822 emails
+  auth.ts            # Google OAuth token management & mock dev fallback
+  dev-mode.ts        # Development-only mock service runtime switch
+  gmail.ts           # Gmail API send + mock dev send path
   email-queue.ts     # Offline-safe queue with automatic retry
   speech.ts          # Speech recognition wrapper (graceful Expo Go fallback)
 docs/

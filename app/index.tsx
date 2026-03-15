@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { type UserInfo, clearAuth, getStoredUserInfo, isAuthenticated } from "../lib/auth";
+import { getMockModeLabel, mockServicesEnabled } from "../lib/dev-mode";
 import { setErrorHandler, useEmailQueue } from "../lib/email-queue";
 import {
   ExpoSpeechRecognitionModule,
@@ -37,6 +38,7 @@ export default function HomeScreen() {
   const [authed, setAuthed] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const mockModeLabel = getMockModeLabel();
 
   // Refs
   const textInputRef = useRef<TextInput>(null);
@@ -210,6 +212,11 @@ export default function HomeScreen() {
 
           <Text style={styles.label}>Signed in as</Text>
           <Text style={styles.emailText}>{userInfo?.email ?? "Unknown"}</Text>
+          {mockServicesEnabled ? (
+            <Text style={styles.mockHelpText}>
+              {mockModeLabel}. Send actions are mocked and stay local to this device.
+            </Text>
+          ) : null}
 
           <Pressable
             onPress={() => {
@@ -248,6 +255,13 @@ export default function HomeScreen() {
         behavior="padding"
       >
         <View style={styles.container}>
+          {mockServicesEnabled ? (
+            <View style={styles.mockBanner}>
+              <Text style={styles.mockBannerText}>
+                {mockModeLabel}: sign-in and send are mocked for development.
+              </Text>
+            </View>
+          ) : null}
           <View style={styles.textInputWrapper}>
             <TextInput
               ref={textInputRef}
@@ -354,6 +368,19 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  mockBanner: {
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#FFF4E5",
+  },
+  mockBannerText: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: "#8A4B00",
+    textAlign: "center",
+  },
   setupContainer: {
     flex: 1,
     alignItems: "center",
@@ -368,6 +395,7 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 17,
+    color: "#111",
     textAlignVertical: "top",
   },
   errorText: {
@@ -505,6 +533,16 @@ const styles = StyleSheet.create({
   emailText: {
     fontSize: 16,
     color: "#000",
+    marginBottom: 24,
+  },
+  mockHelpText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#8A4B00",
+    backgroundColor: "#FFF4E5",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     marginBottom: 24,
   },
   privacyLink: {

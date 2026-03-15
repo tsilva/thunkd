@@ -51,8 +51,9 @@ File-based routing via Expo Router. Two screens + root layout:
 
 ### Libraries (`lib/`)
 
-- `auth.ts` — Google OAuth token management. Native sign-in → server auth code → token exchange → secure storage. Auto-refreshes access tokens 60s before expiry. Platform-aware: uses SecureStore on native, localStorage on web.
-- `gmail.ts` — Constructs RFC 2822 emails, base64url encodes, sends via Gmail API.
+- `auth.ts` — Google OAuth token management. Native sign-in → server auth code → token exchange → secure storage, with a development-only mock auth path for Expo Go/UI work. Auto-refreshes access tokens 60s before expiry. Platform-aware: uses SecureStore on native, localStorage on web.
+- `dev-mode.ts` — Runtime helpers for enabling mock auth/send flows in development and Expo Go.
+- `gmail.ts` — Constructs RFC 2822 emails, base64url encodes, sends via Gmail API, with a development-only mock send path.
 - `email-queue.ts` — Offline-safe queue using `useSyncExternalStore`. Single async processor with retry. Activates `expo-keep-awake` during processing.
 - `speech.ts` — Wraps expo-speech-recognition with graceful no-op fallback when native module is unavailable (e.g., Expo Go).
 
@@ -74,6 +75,9 @@ Copy `.env.example` to `.env`. Required variables:
 
 - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` — Google OAuth web client ID
 - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET` — Google OAuth web client secret
+- `EXPO_PUBLIC_USE_MOCK_SERVICES` — Enable mocked sign-in + send in development
+- `EXPO_PUBLIC_MOCK_USER_EMAIL` — Override the default mock email
+- `EXPO_PUBLIC_MOCK_USER_NAME` — Override the default mock name
 
 Run `make setup-gcloud` for interactive setup.
 

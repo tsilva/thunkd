@@ -1,4 +1,5 @@
 import { getValidAccessToken } from "./auth";
+import { mockServicesEnabled } from "./dev-mode";
 
 function base64url(str: string): string {
   return btoa(str)
@@ -25,6 +26,12 @@ export async function sendEmail(
   text: string,
   userEmail: string,
 ): Promise<void> {
+  if (mockServicesEnabled) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    console.info("[mock-send]", { to: userEmail, text });
+    return;
+  }
+
   const token = await getValidAccessToken();
   const subject = text.length > 60 ? text.slice(0, 60) + "\u2026" : text;
   const raw = base64url(buildRfc2822(userEmail, subject, text));

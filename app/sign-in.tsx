@@ -11,6 +11,7 @@ import {
 import Svg, { Path } from "react-native-svg";
 import { router } from "expo-router";
 import { isAuthenticated, signIn } from "../lib/auth";
+import { getMockModeLabel, getMockUser, mockServicesEnabled } from "../lib/dev-mode";
 
 function GoogleLogo({ size = 20 }: { size?: number }) {
   return (
@@ -38,6 +39,8 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
 export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mockModeLabel = getMockModeLabel();
+  const mockUser = getMockUser();
 
   useEffect(() => {
     isAuthenticated().then((authed) => {
@@ -69,6 +72,7 @@ export default function SignInScreen() {
       />
       <Text style={styles.title}>Thunkd</Text>
       <Text style={styles.subtitle}>Capture thoughts, send to your inbox</Text>
+      {mockServicesEnabled ? <Text style={styles.mockModeLabel}>{mockModeLabel}</Text> : null}
 
       <Pressable
         style={({ pressed }) => [
@@ -81,18 +85,26 @@ export default function SignInScreen() {
       >
         {loading ? (
           <ActivityIndicator size="small" color="#1F1F1F" style={styles.logoContainer} />
+        ) : mockServicesEnabled ? (
+          <View style={styles.mockIcon}>
+            <Text style={styles.mockIconText}>DEV</Text>
+          </View>
         ) : (
           <View style={styles.logoContainer}>
             <GoogleLogo size={20} />
           </View>
         )}
-        <Text style={styles.buttonText}>Sign in with Google</Text>
+        <Text style={styles.buttonText}>
+          {mockServicesEnabled ? "Continue in Mock Mode" : "Sign in with Google"}
+        </Text>
       </Pressable>
 
       {error && <Text style={styles.error}>{error}</Text>}
 
       <Text style={styles.footnote}>
-        We only use Gmail to send thoughts to your own inbox
+        {mockServicesEnabled
+          ? `Using ${mockUser.email}. Sends are faked locally for UI development.`
+          : "We only use Gmail to send thoughts to your own inbox"}
       </Text>
     </View>
   );
@@ -120,7 +132,17 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: "#666",
-    marginBottom: 48,
+    marginBottom: 24,
+  },
+  mockModeLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#8A4B00",
+    backgroundColor: "#FFE6BF",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 24,
   },
   button: {
     flexDirection: "row",
@@ -143,6 +165,20 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     marginRight: 12,
+  },
+  mockIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#1F1F1F",
+    marginRight: 12,
+  },
+  mockIconText: {
+    fontSize: 10,
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
   buttonText: {
     fontSize: 14,
