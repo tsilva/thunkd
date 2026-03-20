@@ -178,6 +178,14 @@ eas update --branch preview --message "description of changes"
 eas update --branch production --message "description of changes"
 ```
 
+### GitHub Preview Builds
+
+Every push to a branch triggers the GitHub Actions workflow in [`.github/workflows/eas-build.yml`](./.github/workflows/eas-build.yml), which starts an Android `preview` APK build on EAS with `--no-wait`.
+
+Required GitHub secret:
+
+- `EXPO_TOKEN` — personal or robot Expo token with access to the `engtiagosilva/thunkd` project
+
 ### Make Commands
 
 Run `make help` to see all available commands, including `make start`, `make build-production`, `make icons`, `make play-assets`, and more. `make icons` regenerates `assets/images/*` and `logo.png` from `assets/branding/icon-source.png` and `assets/branding/logo-source.png`. `make play-assets` rebuilds the Play Store icon and feature graphic, then sizes the checked-in raw app captures in `assets/google-play/raw/` into the final phone screenshots.
