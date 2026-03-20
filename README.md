@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="thunkd" width="256"/>
+  <img src="https://raw.githubusercontent.com/tsilva/thunkd/main/logo.png" alt="thunkd" width="256"/>
 
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
   [![Expo SDK](https://img.shields.io/badge/Expo-SDK%2054-000020.svg?logo=expo)](https://expo.dev)
@@ -133,12 +133,14 @@ docs/
   google-cloud-setup.md  # Google Cloud Console configuration guide
 scripts/
   setup-gcloud.sh        # Interactive Google Cloud setup script
-  generate-icons.mjs     # Rebuild PNG assets from the brand source images
-  generate-play-assets.mjs # Build Google Play store graphics and screenshots
+  generate-icons.mjs     # Derive Expo app assets from canonical brand sources
+  generate-play-assets.mjs # Build the Play icon/feature graphic and size raw screenshots
 assets/branding/
-  *.png                  # Source-of-truth brand images used to export app assets
+  icon-source.png        # Canonical symbol source for app/store assets
+  logo-source.png        # Canonical lockup source for README/store branding
 assets/google-play/
   *.png                  # Play Store listing icon, feature graphic, and screenshots
+  raw/*.png              # Real app captures used for the final phone screenshots
 ```
 
 ## 🛠 Tech Stack
@@ -178,7 +180,7 @@ eas update --branch production --message "description of changes"
 
 ### Make Commands
 
-Run `make help` to see all available commands, including `make start`, `make build-production`, `make icons`, `make play-assets`, and more. `make icons` regenerates `assets/images/*` and `logo.png` from `assets/branding/*.png`. `make play-assets` rebuilds the Google Play listing assets in `assets/google-play/`.
+Run `make help` to see all available commands, including `make start`, `make build-production`, `make icons`, `make play-assets`, and more. `make icons` regenerates `assets/images/*` and `logo.png` from `assets/branding/icon-source.png` and `assets/branding/logo-source.png`. `make play-assets` rebuilds the Play Store icon and feature graphic, then sizes the checked-in raw app captures in `assets/google-play/raw/` into the final phone screenshots.
 
 ## 📄 License
 

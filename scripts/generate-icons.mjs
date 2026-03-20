@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * Rebuild app assets from the checked-in Gemini-generated source images.
+ * Rebuild app assets from the checked-in canonical brand sources.
  *
  * Source images are expected at:
  *   assets/branding/icon-source.png
- *   assets/branding/adaptive-source.png
- *
- * They were generated with OpenRouter's `google/gemini-3.1-flash-image-preview`
- * model, then normalized locally into the platform assets used by Expo.
+ *   assets/branding/logo-source.png
  *
  * Usage:
  *   node scripts/generate-icons.mjs
  */
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
@@ -24,9 +21,9 @@ const ROOT = resolve(__dirname, "..");
 const BRANDING = resolve(ROOT, "assets", "branding");
 const IMAGES = resolve(ROOT, "assets", "images");
 const ICON_SOURCE = resolve(BRANDING, "icon-source.png");
-const ADAPTIVE_SOURCE = resolve(BRANDING, "adaptive-source.png");
+const MIDNIGHT = "#07152B";
 
-function neutralToTransparent(data, info, minAverage, maxSpread) {
+function removeGreenKey(data, info) {
   const output = Buffer.from(data);
 
   for (let index = 0; index < output.length; index += info.channels) {
@@ -34,24 +31,29 @@ function neutralToTransparent(data, info, minAverage, maxSpread) {
     const g = output[index + 1];
     const b = output[index + 2];
     const a = output[index + 3] ?? 255;
-    const spread = Math.max(r, g, b) - Math.min(r, g, b);
-    const average = (r + g + b) / 3;
+    const greenDominance = g - Math.max(r, b);
+    const looksLikeKey = g >= 150 && r <= 120 && b <= 120 && greenDominance >= 40;
 
-    if (a > 0 && average >= minAverage && spread <= maxSpread) {
+    if (a > 0 && looksLikeKey) {
       output[index + 3] = 0;
+      continue;
+    }
+
+    if (a > 0 && greenDominance >= 18) {
+      output[index + 1] = Math.max(r, b);
     }
   }
 
   return output;
 }
 
-async function cleanNeutralBackground(inputPath, minAverage, maxSpread) {
+async function loadSource(inputPath) {
   const { data, info } = await sharp(inputPath)
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  const cleaned = neutralToTransparent(data, info, minAverage, maxSpread);
+  const cleaned = removeGreenKey(data, info);
   return sharp(cleaned, {
     raw: {
       width: info.width,
@@ -63,24 +65,36 @@ async function cleanNeutralBackground(inputPath, minAverage, maxSpread) {
     .toBuffer();
 }
 
-async function buildAppIcon() {
-  const cleaned = await cleanNeutralBackground(ICON_SOURCE, 236, 20);
+async function composeSquareIcon(sourceBuffer, { size, padding, background }) {
+  const inset = Math.round(size * (1 - padding * 2));
+  const symbol = await sharp(sourceBuffer).resize(inset, inset, { fit: "contain" }).png().toBuffer();
 
   return sharp({
     create: {
-      width: 1024,
-      height: 1024,
+      width: size,
+      height: size,
       channels: 4,
-      background: "#05081B",
+      background,
     },
   })
-    .composite([{ input: cleaned }])
+    .composite([
+      {
+        input: symbol,
+        left: Math.round((size - inset) / 2),
+        top: Math.round((size - inset) / 2),
+      },
+    ])
     .png()
     .toBuffer();
 }
 
 async function buildAdaptiveForeground() {
-  return cleanNeutralBackground(ADAPTIVE_SOURCE, 184, 30);
+  const cleaned = await loadSource(ICON_SOURCE);
+  return composeSquareIcon(cleaned, {
+    size: 1024,
+    padding: 0.12,
+    background: { r: 0, g: 0, b: 0, alpha: 0 },
+  });
 }
 
 async function buildMonochromeIcon(inputBuffer) {
@@ -110,39 +124,43 @@ async function buildMonochromeIcon(inputBuffer) {
     .toBuffer();
 }
 
-async function buildLogo(iconBuffer) {
+async function buildLogo(sourceIcon) {
+  const badge = await composeSquareIcon(sourceIcon, {
+    size: 320,
+    padding: 0.16,
+    background: MIDNIGHT,
+  });
+
   const shell = Buffer.from(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560">
-      <rect x="40" y="60" width="1520" height="440" rx="220" fill="#F5F8FD"/>
-      <rect x="40" y="60" width="1520" height="440" rx="220" fill="none" stroke="#D8E2EF" stroke-width="6"/>
       <text
-        x="470"
-        y="286"
-        fill="#10203A"
+        x="458"
+        y="288"
+        fill="#EEF4FF"
         font-family="Avenir Next, Avenir, Helvetica Neue, Helvetica, Arial, sans-serif"
-        font-size="188"
+        font-size="204"
         font-weight="800"
-        letter-spacing="-5"
-      >thunkd</text>
-      <text
-        x="480"
-        y="364"
-        fill="#4E6A85"
-        font-family="Avenir Next, Avenir, Helvetica Neue, Helvetica, Arial, sans-serif"
-        font-size="40"
-        font-weight="600"
-        letter-spacing="5"
-      >CAPTURE THE THOUGHT. SEND THE THOUGHT.</text>
-      <rect x="481" y="395" width="232" height="14" rx="7" fill="#2C58D6"/>
-      <circle cx="738" cy="402" r="7" fill="#F2C343"/>
+        letter-spacing="-6"
+      >Thunkd</text>
+      <rect x="462" y="346" width="214" height="14" rx="7" fill="#4B79EE"/>
+      <circle cx="700" cy="353" r="7" fill="#FFD76B"/>
     </svg>
   `);
 
-  const badge = await sharp(iconBuffer).resize(300, 300).png().toBuffer();
   const base = await sharp(shell).png().toBuffer();
 
-  return sharp(base)
-    .composite([{ input: badge, left: 110, top: 130 }])
+  return sharp({
+    create: {
+      width: 1600,
+      height: 560,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([
+      { input: badge, left: 96, top: 120 },
+      { input: base, left: 0, top: 0 },
+    ])
     .png()
     .toBuffer();
 }
@@ -151,12 +169,21 @@ async function main() {
   await mkdir(IMAGES, { recursive: true });
   await mkdir(BRANDING, { recursive: true });
 
-  const icon = await buildAppIcon();
+  const sourceIcon = await loadSource(ICON_SOURCE);
+  const icon = await composeSquareIcon(sourceIcon, {
+    size: 1024,
+    padding: 0.17,
+    background: MIDNIGHT,
+  });
   const adaptive = await buildAdaptiveForeground();
   const monochrome = await buildMonochromeIcon(adaptive);
-  const splash = await sharp(adaptive).resize(512, 512).png().toBuffer();
+  const splash = await composeSquareIcon(sourceIcon, {
+    size: 512,
+    padding: 0.18,
+    background: { r: 0, g: 0, b: 0, alpha: 0 },
+  });
   const favicon = await sharp(icon).resize(48, 48).png().toBuffer();
-  const logo = await buildLogo(icon);
+  const logo = await buildLogo(sourceIcon);
 
   await writeFile(resolve(IMAGES, "icon.png"), icon);
   console.log(`-> App icon: ${resolve(IMAGES, "icon.png")}`);
