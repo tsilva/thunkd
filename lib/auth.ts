@@ -161,12 +161,10 @@ export async function getValidAccessToken(): Promise<string> {
     store.getItemAsync(STORE_KEYS.expiresAt),
   ]);
 
-  if (!accessToken) throw new Error("Not signed in");
-
   const expiresAt = expiresAtStr ? Number(expiresAtStr) : 0;
   const isExpired = expiresAt > 0 && Date.now() >= expiresAt - 60_000;
 
-  if (!isExpired) return accessToken;
+  if (accessToken && !isExpired) return accessToken;
 
   if (!refreshToken) throw new Error("Session expired — please sign in again");
 
@@ -238,20 +236,21 @@ export async function getStoredUserInfo(): Promise<UserInfo | null> {
 }
 
 export async function isAuthenticated(): Promise<boolean> {
-  const [accessToken, expiresAtStr] = await Promise.all([
+  const [accessToken, refreshToken] = await Promise.all([
     store.getItemAsync(STORE_KEYS.accessToken),
-    store.getItemAsync(STORE_KEYS.expiresAt),
+    store.getItemAsync(STORE_KEYS.refreshToken),
   ]);
-  
-  if (!accessToken) return false;
-  
-  // Check if token is expired
-  const expiresAt = expiresAtStr ? Number(expiresAtStr) : 0;
-  if (expiresAt > 0 && Date.now() >= expiresAt) {
+
+  if (!accessToken && !refreshToken) {
     return false;
   }
-  
-  return true;
+
+  try {
+    await getValidAccessToken();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function clearAuth() {
