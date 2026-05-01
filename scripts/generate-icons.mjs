@@ -133,6 +133,7 @@ async function buildLogo(sourceIcon) {
 
   const shell = Buffer.from(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 560">
+      <rect x="56" y="72" width="1368" height="416" rx="44" fill="${MIDNIGHT}"/>
       <text
         x="458"
         y="288"
@@ -158,8 +159,8 @@ async function buildLogo(sourceIcon) {
     },
   })
     .composite([
-      { input: badge, left: 96, top: 120 },
       { input: base, left: 0, top: 0 },
+      { input: badge, left: 96, top: 120 },
     ])
     .png()
     .toBuffer();
