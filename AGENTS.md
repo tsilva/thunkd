@@ -15,9 +15,9 @@ This file provides guidance to Claude Code when working with this repository.
 ### Development
 
 ```bash
-npm install        # install dependencies
-npx expo start     # start dev server
-npx expo start -c  # start with cleared cache
+pnpm install             # install dependencies
+pnpm exec expo start     # start dev server
+pnpm exec expo start -c  # start with cleared cache
 ```
 
 ### Building

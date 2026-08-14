@@ -34,13 +34,18 @@ jobs:
           persist-credentials: false
         if: steps.expo-token.outputs.available == 'true'
 
+      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
+        if: steps.expo-token.outputs.available == 'true'
+        with:
+          version: 10.27.0
+
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         if: steps.expo-token.outputs.available == 'true'
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
         if: steps.expo-token.outputs.available == 'true'
 
       - uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8
