@@ -22,7 +22,7 @@ Zero-friction mobile app for capturing thoughts via voice or text and sending th
 All commands available via `make help`.
 
 ```bash
-make install          # npm install
+make install          # pnpm install
 make start            # Start Expo dev server
 make start-clear      # Start with cleared cache
 make ios              # Run on iOS simulator

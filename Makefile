@@ -9,31 +9,31 @@ help: ## Show this help
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install dependencies
-	npm install
+	pnpm install
 
 ci: ## Clean install (CI-style)
-	npm ci
+	pnpm install --frozen-lockfile
 
 start: ## Start Expo dev server
-	npx expo start
+	pnpm exec expo start
 
 start-clear: ## Start Expo dev server (cache cleared)
-	npx expo start --clear
+	pnpm exec expo start --clear
 
 ios: ## Start on iOS simulator
-	npx expo start --ios
+	pnpm exec expo start --ios
 
 android: ## Start on Android emulator
-	npx expo start --android
+	pnpm exec expo start --android
 
 web: ## Start web version
-	npx expo start --web
+	pnpm exec expo start --web
 
 lint: ## Run ESLint
-	npx expo lint
+	pnpm exec expo lint
 
 typecheck: ## Run TypeScript type checking
-	npx tsc --noEmit
+	pnpm exec tsc --noEmit
 
 check: lint typecheck ## Run lint + typecheck
 

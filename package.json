@@ -40,5 +40,11 @@
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
   },
+  "pnpm": {
+    "overrides": {
+      "shell-quote": "1.8.4",
+      "tar": "7.5.19"
+    }
+  },
   "private": true
 }
