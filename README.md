@@ -47,7 +47,7 @@ eas update --branch production --message "message"  # production OTA update
 
 ## Notes
 
-- This repo declares `pnpm@10.27.0` in `package.json` and rejects non-pnpm installs in `preinstall`.
+- This repo declares `pnpm@10.27.0` in `package.json`, commits `pnpm-lock.yaml`, and rejects non-pnpm installs in `preinstall`.
 - Voice capture uses `expo-speech-recognition`, so it needs a development build for real native speech input; Expo Go is best used with mock services.
 - Live Google sign-in is temporarily disabled while OAuth token exchange moves to a server-side flow. Mock sign-in and mock Gmail sends remain available with `EXPO_PUBLIC_USE_MOCK_SERVICES=1`.
 - `EXPO_PUBLIC_USE_MOCK_SERVICES=1` enables mocked sign-in and mocked Gmail sends. Optional mock identity values are `EXPO_PUBLIC_MOCK_USER_EMAIL` and `EXPO_PUBLIC_MOCK_USER_NAME`.
