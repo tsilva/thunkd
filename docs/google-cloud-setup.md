@@ -1,6 +1,6 @@
 # Google Cloud Console Setup
 
-This guide walks through configuring Google Cloud so that Thunkd can authenticate users via Google OAuth and send emails through the Gmail API.
+This guide records the Google Cloud setup for Thunkd. Live Google sign-in is temporarily disabled while OAuth token exchange is moved to a server-side flow; mock mode remains available for local development.
 
 ## Automated Setup (Recommended)
 
@@ -72,9 +72,9 @@ You need to create **three** client IDs:
 - **Name:** `Thunkd Web`
 - No redirect URIs needed (the native SDK handles auth natively, not via browser redirects)
 - Click **Create**
-- Copy the **Client ID** and **Client Secret** — these are your `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET`
+- Copy the **Client ID** only. Do not put the client secret in Expo environment variables or the app bundle.
 
-> The web client ID is used by the native Google Sign-In SDK to obtain a server auth code, which is then exchanged for access/refresh tokens.
+> The web client ID may be used by the native Google Sign-In SDK to obtain a server auth code. A future backend must exchange that code and refresh tokens without exposing the client secret to the app.
 
 #### iOS client
 
@@ -101,17 +101,15 @@ Copy `.env.example` to `.env` and fill in the values:
 
 ```
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=123456789-abc.apps.googleusercontent.com
-EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET=GOCSPX-...
 ```
 
-### 6. Verify the setup
+### 6. Verify local development
 
-1. Build a dev client: `eas build --platform android --profile development`
-2. Install the APK and launch the app
-3. Tap **Sign in with Google** — the native Google account picker should appear (no browser)
-4. Sign in with one of the test users you added
-5. After consent, you're redirected to the capture screen
-6. Type a thought, tap Send — an email should arrive in your inbox (from yourself)
+1. Set `EXPO_PUBLIC_USE_MOCK_SERVICES=1`.
+2. Launch the app and continue in mock mode.
+3. Confirm capture and mock-send behavior locally.
+
+Live sign-in cannot be verified until the server-side OAuth exchange is implemented.
 
 ### Appendix
 

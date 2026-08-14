@@ -63,18 +63,15 @@ No external state library. Uses React `useState` for UI state and `useSyncExtern
 
 ### Auth Flow
 
-1. Native Google Sign-In → receives `serverAuthCode`
-2. Exchange auth code for access + refresh tokens via `https://oauth2.googleapis.com/token`
-3. Store tokens in secure storage with expiration timestamp
-4. `getValidAccessToken()` auto-refreshes before expiry
-5. OAuth scopes: `openid`, `userinfo.email`, `userinfo.profile`, `gmail.send`
+Live Google sign-in is temporarily disabled because OAuth client secrets cannot
+be safely embedded in an Expo client. Mock sign-in remains available for local
+development. A future live flow must exchange and refresh tokens server-side.
 
 ## Environment
 
 Copy `.env.example` to `.env`. Required variables:
 
 - `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` — Google OAuth web client ID
-- `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET` — Google OAuth web client secret
 - `EXPO_PUBLIC_USE_MOCK_SERVICES` — Enable mocked sign-in + send in development
 - `EXPO_PUBLIC_MOCK_USER_EMAIL` — Override the default mock email
 - `EXPO_PUBLIC_MOCK_USER_NAME` — Override the default mock name

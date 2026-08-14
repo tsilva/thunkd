@@ -207,12 +207,6 @@ else
   read -r WEB_CLIENT_ID
   env_set "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID" "$WEB_CLIENT_ID"
 
-  printf "${YELLOW}→ Paste the Web Client Secret (or press Enter to skip):${RESET} "
-  read -r WEB_CLIENT_SECRET
-  if [[ -n "$WEB_CLIENT_SECRET" ]]; then
-    env_set "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET" "$WEB_CLIENT_SECRET"
-  fi
-
   step_done "Web client ID saved"
 fi
 

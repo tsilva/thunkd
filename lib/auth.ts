@@ -2,19 +2,6 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { getMockUser, mockServicesEnabled } from "./dev-mode";
 
-type GoogleSigninModule = typeof import("@react-native-google-signin/google-signin");
-
-let googleSigninModule: GoogleSigninModule | null = null;
-
-try {
-  googleSigninModule = require("@react-native-google-signin/google-signin") as GoogleSigninModule;
-} catch {
-  // Native module unavailable (for example Expo Go)
-}
-
-const GoogleSignin = googleSigninModule?.GoogleSignin ?? null;
-const isSuccessResponse = googleSigninModule?.isSuccessResponse ?? null;
-
 // expo-secure-store doesn't support web — fall back to localStorage
 const store = {
   getItemAsync: (key: string) =>
@@ -39,35 +26,14 @@ const STORE_KEYS = {
   userName: "google_user_name",
 } as const;
 
-const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "";
-const WEB_CLIENT_SECRET =
-  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_SECRET ?? "";
-
-const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
-
-export const SCOPES = [
-  "openid",
-  "https://www.googleapis.com/auth/userinfo.email",
-  "https://www.googleapis.com/auth/userinfo.profile",
-  "https://www.googleapis.com/auth/gmail.send",
-];
+export const LIVE_AUTH_DISABLED_MESSAGE =
+  "Google sign-in is temporarily unavailable while OAuth is moved to a server-side flow.";
 
 export type UserInfo = {
   email: string;
   name: string;
 };
 
-GoogleSignin?.configure({
-  webClientId: WEB_CLIENT_ID,
-  offlineAccess: true,
-  scopes: SCOPES,
-  forceCodeForRefreshToken: true,
-});
-
-/**
- * Trigger the native Google Sign-In flow, then exchange the server auth code
- * for access + refresh tokens via Google's token endpoint.
- */
 export async function signIn(): Promise<UserInfo> {
   if (mockServicesEnabled) {
     const mockUser = getMockUser();
@@ -83,59 +49,8 @@ export async function signIn(): Promise<UserInfo> {
     return mockUser;
   }
 
-  if (!GoogleSignin || !isSuccessResponse) {
-    throw new Error(
-      "Google Sign-In requires a development build. Use Expo Go with mock services enabled or run a dev client.",
-    );
-  }
-
-  const response = await GoogleSignin.signIn();
-  if (!isSuccessResponse(response)) {
-    throw new Error("Google Sign-In was cancelled");
-  }
-
-  const { serverAuthCode } = response.data;
-  if (!serverAuthCode) {
-    throw new Error("No server auth code returned — check webClientId and offlineAccess config");
-  }
-
-  // Exchange auth code for tokens
-  const tokenRes = await fetch(TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code: serverAuthCode,
-      client_id: WEB_CLIENT_ID,
-      client_secret: WEB_CLIENT_SECRET,
-      grant_type: "authorization_code",
-      redirect_uri: "",
-    }).toString(),
-  });
-
-  if (!tokenRes.ok) {
-    const err = await tokenRes.text();
-    throw new Error(`Token exchange failed: ${err}`);
-  }
-
-  const tokens = await tokenRes.json();
-
-  const expiresAt = tokens.expires_in
-    ? String(Date.now() + tokens.expires_in * 1000)
-    : "";
-
-  await Promise.all([
-    store.setItemAsync(STORE_KEYS.accessToken, tokens.access_token),
-    tokens.refresh_token
-      ? store.setItemAsync(STORE_KEYS.refreshToken, tokens.refresh_token)
-      : Promise.resolve(),
-    expiresAt
-      ? store.setItemAsync(STORE_KEYS.expiresAt, expiresAt)
-      : Promise.resolve(),
-  ]);
-
-  const profile = await fetchUserProfile();
-  await storeUserInfo(profile);
-  return profile;
+  await clearAuth();
+  throw new Error(LIVE_AUTH_DISABLED_MESSAGE);
 }
 
 export async function getValidAccessToken(): Promise<string> {
@@ -155,54 +70,8 @@ export async function getValidAccessToken(): Promise<string> {
     return accessToken;
   }
 
-  const [accessToken, refreshToken, expiresAtStr] = await Promise.all([
-    store.getItemAsync(STORE_KEYS.accessToken),
-    store.getItemAsync(STORE_KEYS.refreshToken),
-    store.getItemAsync(STORE_KEYS.expiresAt),
-  ]);
-
-  const expiresAt = expiresAtStr ? Number(expiresAtStr) : 0;
-  const isExpired = expiresAt > 0 && Date.now() >= expiresAt - 60_000;
-
-  if (accessToken && !isExpired) return accessToken;
-
-  if (!refreshToken) throw new Error("Session expired — please sign in again");
-
-  const res = await fetch(TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: WEB_CLIENT_ID,
-      client_secret: WEB_CLIENT_SECRET,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }).toString(),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    // Clear auth data on refresh failure to force fresh sign-in
-    await clearAuth();
-    throw new Error(`Session expired — please sign in again`);
-  }
-
-  const refreshed = await res.json();
-
-  const newExpiresAt = refreshed.expires_in
-    ? String(Date.now() + refreshed.expires_in * 1000)
-    : "";
-
-  await Promise.all([
-    store.setItemAsync(STORE_KEYS.accessToken, refreshed.access_token),
-    refreshed.refresh_token
-      ? store.setItemAsync(STORE_KEYS.refreshToken, refreshed.refresh_token)
-      : Promise.resolve(),
-    newExpiresAt
-      ? store.setItemAsync(STORE_KEYS.expiresAt, newExpiresAt)
-      : Promise.resolve(),
-  ]);
-
-  return refreshed.access_token;
+  await clearAuth();
+  throw new Error(LIVE_AUTH_DISABLED_MESSAGE);
 }
 
 export async function fetchUserProfile(): Promise<UserInfo> {
@@ -236,6 +105,11 @@ export async function getStoredUserInfo(): Promise<UserInfo | null> {
 }
 
 export async function isAuthenticated(): Promise<boolean> {
+  if (!mockServicesEnabled) {
+    await clearAuth();
+    return false;
+  }
+
   const [accessToken, refreshToken] = await Promise.all([
     store.getItemAsync(STORE_KEYS.accessToken),
     store.getItemAsync(STORE_KEYS.refreshToken),
@@ -254,13 +128,6 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 export async function clearAuth() {
-  if (GoogleSignin) {
-    try {
-      await GoogleSignin.signOut();
-    } catch {
-      // Ignore — user may not have an active native session
-    }
-  }
   await Promise.all(
     Object.values(STORE_KEYS).map((key) => store.deleteItemAsync(key)),
   );
