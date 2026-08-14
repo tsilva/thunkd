@@ -43,7 +43,8 @@
   "pnpm": {
     "overrides": {
       "shell-quote": "1.8.4",
-      "tar": "7.5.19"
+      "tar": "7.5.19",
+      "ws": "8.21.2"
     }
   },
   "private": true
