@@ -17,3 +17,5 @@ jobs:
         with:
           persist-credentials: false
       - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
