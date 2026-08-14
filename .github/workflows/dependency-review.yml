@@ -28,6 +28,7 @@ jobs:
         with:
           fail-on-severity: high
           fail-on-scopes: runtime, development, unknown
+          allow-ghsas: GHSA-5p2g-fcmc-qvqq, GHSA-w3rx-r6r6-pgpr # Locally patched; see image-size regression test.
           retry-on-snapshot-warnings: true
 
       - name: Dependency review (push audit)
@@ -36,6 +37,7 @@ jobs:
         with:
           fail-on-severity: high
           fail-on-scopes: runtime, development, unknown
+          allow-ghsas: GHSA-5p2g-fcmc-qvqq, GHSA-w3rx-r6r6-pgpr # Locally patched; see image-size regression test.
           retry-on-snapshot-warnings: true
           base-ref: ${{ github.event.before }}
           head-ref: ${{ github.sha }}
@@ -46,6 +48,7 @@ jobs:
         with:
           fail-on-severity: high
           fail-on-scopes: runtime, development, unknown
+          allow-ghsas: GHSA-5p2g-fcmc-qvqq, GHSA-w3rx-r6r6-pgpr # Locally patched; see image-size regression test.
           retry-on-snapshot-warnings: true
           base-ref: ${{ github.event.merge_group.base_sha }}
           head-ref: ${{ github.event.merge_group.head_sha }}
