@@ -1,8 +1,10 @@
-<div align="center">
+<p align="center">
   <img src="./logo.png" alt="thunkd" width="256" />
-
-  **⚡ Capture thoughts instantly and send them straight to your inbox 💭**
-</div>
+  <br />
+  <!-- repo-tagline:start -->
+  <strong>⚡ Capture thoughts instantly and send them straight to your inbox 💭</strong>
+  <!-- repo-tagline:end -->
+</p>
 
 Thunkd is a single-screen Expo app for quickly capturing a thought by typing or speaking, then sending it to your own Gmail inbox.
 
