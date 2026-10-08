@@ -34,7 +34,7 @@ jobs:
           persist-credentials: false
         if: steps.expo-token.outputs.available == 'true'
 
-      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         if: steps.expo-token.outputs.available == 'true'
         with:
           version: 10.27.0
