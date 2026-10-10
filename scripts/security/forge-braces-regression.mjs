@@ -73,6 +73,8 @@ if (!isMainThread) {
     assert.throws(() => keyPair.publicKey.verify(digest, signDigestInfo(algorithm)), /valid RSASSA-PKCS1-v1_5 DigestInfo/);
   }
   assert.deepEqual(braces.expand("src/{a,{b,c}}.{js,ts}"), ["src/a.js", "src/a.ts", "src/b.js", "src/b.ts", "src/c.js", "src/c.ts"]);
+  const shared = { type: "text", value: "a" };
+  assert.equal(braces.stringify({ type: "root", nodes: [shared, shared] }), "aa");
   assert.deepEqual(braces.expand("item-{01..03}"), ["item-01", "item-02", "item-03"]);
   assert.equal(braces.compile("a/{b,c}/d"), "a/(b|c)/d");
   assert.equal(braces.stringify(braces.parse("a/{b,c}/d")), "a/{b,c}/d");

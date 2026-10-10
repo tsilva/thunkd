@@ -1,24 +1,29 @@
 diff --git a/lib/check-depth.js b/lib/check-depth.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..952fc5b1af6c748991459f75ad4748825056603b
+index 0000000000000000000000000000000000000000..0fbf12c49569e54a3bc1eeeedb193536fe16b2a5
 --- /dev/null
 +++ b/lib/check-depth.js
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,25 @@
 +'use strict';
 +
 +// Validate before any recursive AST walk, including direct AST callers.
 +module.exports = ast => {
 +  const pending = [[ast, 0]];
-+  const seen = new Set();
++  const active = new Set();
 +  while (pending.length) {
-+    const [node, depth] = pending.pop();
++    const [node, depth, leaving] = pending.pop();
++    if (leaving) {
++      active.delete(node);
++      continue;
++    }
 +    if (!node || typeof node !== 'object') continue;
-+    if (depth >= 128 || seen.has(node)) {
++    if (depth >= 128 || active.has(node)) {
 +      const error = new SyntaxError('Brace AST exceeds the safe nesting limit or contains a cycle');
 +      error.code = 'BRACES_MAX_DEPTH';
 +      throw error;
 +    }
-+    seen.add(node);
++    active.add(node);
++    pending.push([node, depth, true]);
 +    if (Array.isArray(node.nodes)) {
 +      for (const child of node.nodes) pending.push([child, depth + 1]);
 +    }
