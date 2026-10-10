@@ -39,6 +39,7 @@ pnpm android     # open on an Android emulator
 pnpm ios         # open on an iOS simulator
 pnpm web         # run the web target
 pnpm lint        # run Expo lint checks
+pnpm security:test # check dependency fixes and normal parsing/signing behavior
 
 eas build --platform android --profile development  # Android dev build
 eas build --platform android --profile preview      # Android preview APK
@@ -55,6 +56,12 @@ eas update --branch production --message "message"  # production OTA update
 - `EXPO_PUBLIC_USE_MOCK_SERVICES=1` enables mocked sign-in and mocked Gmail sends. Optional mock identity values are `EXPO_PUBLIC_MOCK_USER_EMAIL` and `EXPO_PUBLIC_MOCK_USER_NAME`.
 - Sent history and queued messages are kept in memory for the current app session. Mock auth state is stored with `expo-secure-store`, with a web localStorage fallback.
 - EAS is configured for development, preview, and production builds in `eas.json`; the Android production submit profile expects `service-account-play-store.json`.
+
+## Dependency security
+
+The pinned pnpm install applies reviewed source patches to `image-size`, `node-forge` and `braces`. The Forge patch follows [upstream PR 1152](https://github.com/digitalbazaar/forge/pull/1152) at `ceba34402e329f0365134f23fe19898756527d65`: RSA verification rejects extra nested DigestInfo fields while retaining valid AlgorithmIdentifier forms. Brace parsing and AST operations reject nesting at 128 levels and cyclic ASTs with `BRACES_MAX_DEPTH`; normal globs, escapes and ranges remain supported.
+
+Istanbul's NYC configuration loader resolves `js-yaml` 4.3.2, removing its older YAML/`sprintf-js` path. `pnpm security:test` checks that loader and the actual Expo signing and glob dependencies. No audit threshold or advisory allowlist was weakened. Version-based audits and Dependabot may continue to flag the two unreleased Forge/Braces advisories even with these local patches; source regression checks and normal CI must be considered alongside those still-open alerts. Replace the backports with upstream releases after their compatibility and release age are verified.
 
 ## Architecture
 

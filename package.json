@@ -8,7 +8,7 @@
     "start": "node scripts/dev-server.mjs expo start",
     "android": "node scripts/dev-server.mjs expo start --android",
     "ios": "node scripts/dev-server.mjs expo start --ios",
-    "security:test": "node scripts/security/image-size-regression.mjs",
+    "security:test": "node scripts/security/image-size-regression.mjs && node scripts/security/nyc-config-regression.mjs && node scripts/security/forge-braces-regression.mjs",
     "web": "node scripts/dev-server.mjs expo start --web",
     "lint": "expo lint"
   },
@@ -64,10 +64,13 @@
       "baseline-browser-mapping@<2.11.0": "2.11.27",
       "browserslist@<4.28.7": "4.28.9",
       "@humanfs/node@<0.16.8": "0.16.8",
-      "decode-uri-component": "0.5.0"
+      "decode-uri-component": "0.5.0",
+      "@istanbuljs/load-nyc-config@1.1.0>js-yaml": "4.3.2"
     },
     "patchedDependencies": {
-      "image-size@1.2.1": "patches/image-size@1.2.1.patch"
+      "image-size@1.2.1": "patches/image-size@1.2.1.patch",
+      "node-forge@1.4.0": "patches/node-forge@1.4.0.patch",
+      "braces@3.0.3": "patches/braces@3.0.3.patch"
     }
   },
   "private": true
