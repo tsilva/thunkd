@@ -26,11 +26,18 @@ overrides:
   browserslist@<4.28.7: 4.28.9
   '@humanfs/node@<0.16.8': 0.16.8
   decode-uri-component: 0.5.0
+  '@istanbuljs/load-nyc-config@1.1.0>js-yaml': 4.3.2
 
 patchedDependencies:
+  braces@3.0.3:
+    hash: 195ac2c81b2624193e4a93f8fd64c1f6d6f54dd7e65e2968ac54251399983aab
+    path: patches/braces@3.0.3.patch
   image-size@1.2.1:
     hash: eb84241d84be6b96e322a2377604ede00399f6a91b202d75b9a06867230b2d69
     path: patches/image-size@1.2.1.patch
+  node-forge@1.4.0:
+    hash: b6876574a5de19521a766856b293aeae2689848c5d8dab03f93040be0a64b8b4
+    path: patches/node-forge@1.4.0.patch
 
 importers:
 
@@ -1731,9 +1738,6 @@ packages:
   arg@5.0.2:
     resolution: {integrity: sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg==}
 
-  argparse@1.0.10:
-    resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
-
   argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
@@ -2356,11 +2360,6 @@ packages:
   espree@10.4.0:
     resolution: {integrity: sha512-j6PAQ2uUr79PZhBjP5C5fhl8e39FmRnOjsD5lGnWrFU8i2G776tBK7+nP8KuQUTTyAZUwfQqXAgrVH5MbH9CYQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  esprima@4.0.1:
-    resolution: {integrity: sha512-eGuFFw7Upda+g4p+QHvnW0RyTX/SVeJBDM/gCtMARO0cLuT2HcEKnTPvhjV6aGeqrCB/sbNop0Kszm0jsaWU4A==}
-    engines: {node: '>=4'}
-    hasBin: true
 
   esquery@1.7.0:
     resolution: {integrity: sha512-Ap6G0WQwcU/LHsvLwON1fAQX9Zp0A2Y6Y/cJBl9r/JbW90Zyg4/zbG6zzKa2OTALELarYHmKu0GhpM5EO+7T0g==}
@@ -3010,10 +3009,6 @@ packages:
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
-
-  js-yaml@3.15.2:
-    resolution: {integrity: sha512-6EuL879VkRA+1Cz578mKMiKvjPNEuk6+r1JaFzoSWejZmtf7xWbIyw1e3KkxlkzTIt9Taw6JBhEppG7utc1P+w==}
-    hasBin: true
 
   js-yaml@4.3.2:
     resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
@@ -3943,9 +3938,6 @@ packages:
   split-on-first@1.1.0:
     resolution: {integrity: sha512-43ZssAJaMusuKWL8sKUBQXHWOpq8d6CfN/u1p4gUzfJkM05C8rxTmYrkIPTXapZpORA6LkkzcUulJ8FqA7Uudw==}
     engines: {node: '>=6'}
-
-  sprintf-js@1.0.3:
-    resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
 
   stable-hash@0.0.5:
     resolution: {integrity: sha512-+L3ccpzibovGXFK+Ap/f8LOS0ahMrHTf3xu7mMLSpEGU0EO9ucaysSylKo9eRDFNhWve/y275iPmIZ4z39a9iA==}
@@ -5128,7 +5120,7 @@ snapshots:
       glob: 13.0.6
       lan-network: 0.2.1
       minimatch: 9.0.9
-      node-forge: 1.4.0
+      node-forge: 1.4.0(patch_hash=b6876574a5de19521a766856b293aeae2689848c5d8dab03f93040be0a64b8b4)
       npm-package-arg: 11.0.3
       ora: 3.4.0
       picomatch: 4.0.4
@@ -5165,7 +5157,7 @@ snapshots:
 
   '@expo/code-signing-certificates@0.0.6':
     dependencies:
-      node-forge: 1.4.0
+      node-forge: 1.4.0(patch_hash=b6876574a5de19521a766856b293aeae2689848c5d8dab03f93040be0a64b8b4)
 
   '@expo/config-plugins@54.0.4':
     dependencies:
@@ -5530,7 +5522,7 @@ snapshots:
       camelcase: 5.3.1
       find-up: 4.1.0
       get-package-type: 0.1.0
-      js-yaml: 3.15.2
+      js-yaml: 4.3.2
       resolve-from: 5.0.0
 
   '@istanbuljs/schema@0.1.3': {}
@@ -6306,10 +6298,6 @@ snapshots:
 
   arg@5.0.2: {}
 
-  argparse@1.0.10:
-    dependencies:
-      sprintf-js: 1.0.3
-
   argparse@2.0.1: {}
 
   aria-hidden@1.2.6:
@@ -6555,7 +6543,7 @@ snapshots:
     dependencies:
       balanced-match: 4.0.4
 
-  braces@3.0.3:
+  braces@3.0.3(patch_hash=195ac2c81b2624193e4a93f8fd64c1f6d6f54dd7e65e2968ac54251399983aab):
     dependencies:
       fill-range: 7.1.1
 
@@ -7152,8 +7140,6 @@ snapshots:
       acorn: 8.16.0
       acorn-jsx: 5.3.2(acorn@8.16.0)
       eslint-visitor-keys: 4.2.1
-
-  esprima@4.0.1: {}
 
   esquery@1.7.0:
     dependencies:
@@ -7894,11 +7880,6 @@ snapshots:
 
   js-tokens@4.0.0: {}
 
-  js-yaml@3.15.2:
-    dependencies:
-      argparse: 1.0.10
-      esprima: 4.0.1
-
   js-yaml@4.3.2:
     dependencies:
       argparse: 2.0.1
@@ -8224,7 +8205,7 @@ snapshots:
 
   micromatch@4.0.8:
     dependencies:
-      braces: 3.0.3
+      braces: 3.0.3(patch_hash=195ac2c81b2624193e4a93f8fd64c1f6d6f54dd7e65e2968ac54251399983aab)
       picomatch: 2.3.2
 
   mime-db@1.52.0: {}
@@ -8292,7 +8273,7 @@ snapshots:
     dependencies:
       whatwg-url: 5.0.0
 
-  node-forge@1.4.0: {}
+  node-forge@1.4.0(patch_hash=b6876574a5de19521a766856b293aeae2689848c5d8dab03f93040be0a64b8b4): {}
 
   node-int64@0.4.0: {}
 
@@ -8963,8 +8944,6 @@ snapshots:
   source-map@0.6.1: {}
 
   split-on-first@1.1.0: {}
-
-  sprintf-js@1.0.3: {}
 
   stable-hash@0.0.5: {}
 
