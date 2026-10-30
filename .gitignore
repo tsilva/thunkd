@@ -67,3 +67,5 @@ Pods/
 android/
 *.apk
 *.aab
+/INBOX.md
+/.local/repo-inbox/
