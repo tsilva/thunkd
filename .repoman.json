@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "exceptions": {
+    "dependencies.releaseAge": {
+      "npm:node-forge@1.4.3#age": "Audited exact security release. Published 2026-11-04 01:06 UTC. Verified npm registry signature, artifact integrity, and upstream source. Remove once eligible on 2026-11-11 01:06 UTC."
+    }
+  }
+}
