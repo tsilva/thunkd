@@ -45,7 +45,7 @@ export default function HomeScreen() {
 
   // Speech recognition state
   const [recording, setRecording] = useState(false);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [pulseAnim] = useState(() => new Animated.Value(1));
   const baseTextRef = useRef("");
   const micPressActiveRef = useRef(false);
   const recordingRequestedRef = useRef(false);

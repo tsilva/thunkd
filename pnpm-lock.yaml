@@ -31,8 +31,12 @@ overrides:
   glob@>=9.0.0 <14.0.2: 14.0.2
   minimatch@>=7.0.0 <11.0.1: 11.0.1
   metro@0.83.3>image-size: 2.0.3
+  '@expo/config@12.0.13>deepmerge': npm:@fastify/deepmerge@3.2.4
 
 patchedDependencies:
+  '@expo/config@12.0.13':
+    hash: f1e04234f64baba52acf91e2d6f250ff3d440ec77d862d00359604db990288a1
+    path: patches/expo-config-12.0.13.patch
   braces@3.0.3:
     hash: 195ac2c81b2624193e4a93f8fd64c1f6d6f54dd7e65e2968ac54251399983aab
     path: patches/braces@3.0.3.patch
@@ -855,6 +859,9 @@ packages:
   '@expo/xcpretty@4.4.3':
     resolution: {integrity: sha512-wC562eD3gS6vO2tWHToFhlFnmHKfKHgF1oyvojeSkLK/ZYop1bMU+7cOMiF9Sq70CzcsLy/EMRy/uRc76QmNRw==}
     hasBin: true
+
+  '@fastify/deepmerge@3.2.4':
+    resolution: {integrity: sha512-kc8GQq5gX9RRhw0rov3DMrN8wS8yRlxJRdDzsYwwdBV/wazuVgc/1K7CKL90tlvu3RlHan6Y0R0aE3nJtBz2eQ==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -2145,10 +2152,6 @@ packages:
 
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
-
-  deepmerge@4.3.1:
-    resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
-    engines: {node: '>=0.10.0'}
 
   defaults@1.0.4:
     resolution: {integrity: sha512-eFuaLoy/Rxalv2kr+lqMlUnrDWV+3j4pljOIJgLIhI058IQfWJ7vXhyEIHu+HtC738klGALYxOKDO0bQP3tg8A==}
@@ -5161,7 +5164,7 @@ snapshots:
     dependencies:
       '@0no-co/graphql.web': 1.2.0
       '@expo/code-signing-certificates': 0.0.6
-      '@expo/config': 12.0.13
+      '@expo/config': 12.0.13(patch_hash=f1e04234f64baba52acf91e2d6f250ff3d440ec77d862d00359604db990288a1)
       '@expo/config-plugins': 54.0.4
       '@expo/devcert': 1.2.1
       '@expo/env': 2.0.11
@@ -5258,13 +5261,13 @@ snapshots:
 
   '@expo/config-types@54.0.10': {}
 
-  '@expo/config@12.0.13':
+  '@expo/config@12.0.13(patch_hash=f1e04234f64baba52acf91e2d6f250ff3d440ec77d862d00359604db990288a1)':
     dependencies:
       '@babel/code-frame': 7.10.4
       '@expo/config-plugins': 54.0.4
       '@expo/config-types': 54.0.10
       '@expo/json-file': 10.0.13
-      deepmerge: 4.3.1
+      deepmerge: '@fastify/deepmerge@3.2.4'
       getenv: 2.0.0
       glob: 14.0.2
       require-from-string: 2.0.2
@@ -5339,7 +5342,7 @@ snapshots:
       '@babel/code-frame': 7.29.0
       '@babel/core': 7.29.7
       '@babel/generator': 7.29.1
-      '@expo/config': 12.0.13
+      '@expo/config': 12.0.13(patch_hash=f1e04234f64baba52acf91e2d6f250ff3d440ec77d862d00359604db990288a1)
       '@expo/env': 2.0.11
       '@expo/json-file': 10.0.13
       '@expo/metro': 54.2.0
@@ -5418,7 +5421,7 @@ snapshots:
 
   '@expo/prebuild-config@54.0.8(expo@54.0.34)(typescript@5.9.3)':
     dependencies:
-      '@expo/config': 12.0.13
+      '@expo/config': 12.0.13(patch_hash=f1e04234f64baba52acf91e2d6f250ff3d440ec77d862d00359604db990288a1)
       '@expo/config-plugins': 54.0.4
       '@expo/config-types': 54.0.10
       '@expo/image-utils': 0.8.13(typescript@5.9.3)
@@ -5466,6 +5469,8 @@ snapshots:
       '@babel/code-frame': 7.29.0
       chalk: 4.1.2
       js-yaml: 4.3.2
+
+  '@fastify/deepmerge@3.2.4': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -6847,8 +6852,6 @@ snapshots:
 
   deep-is@0.1.4: {}
 
-  deepmerge@4.3.1: {}
-
   defaults@1.0.4:
     dependencies:
       clone: 1.0.4
@@ -7255,7 +7258,7 @@ snapshots:
 
   expo-constants@18.0.13(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)):
     dependencies:
-      '@expo/config': 12.0.13
+      '@expo/config': 12.0.13(patch_hash=f1e04234f64baba52acf91e2d6f250ff3d440ec77d862d00359604db990288a1)
       '@expo/env': 2.0.11
       expo: 54.0.34(@babel/core@7.29.7)(@expo/metro-runtime@6.1.2)(expo-router@6.0.23)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
       react-native: 0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0)
@@ -7324,7 +7327,7 @@ snapshots:
 
   expo-manifests@1.0.11(expo@54.0.34):
     dependencies:
-      '@expo/config': 12.0.13
+      '@expo/config': 12.0.13(patch_hash=f1e04234f64baba52acf91e2d6f250ff3d440ec77d862d00359604db990288a1)
       expo: 54.0.34(@babel/core@7.29.7)(@expo/metro-runtime@6.1.2)(expo-router@6.0.23)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
       expo-json-utils: 0.15.0
     transitivePeerDependencies:
@@ -7440,7 +7443,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.28.6
       '@expo/cli': 54.0.24(expo-router@6.0.23)(expo@54.0.34)(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(typescript@5.9.3)
-      '@expo/config': 12.0.13
+      '@expo/config': 12.0.13(patch_hash=f1e04234f64baba52acf91e2d6f250ff3d440ec77d862d00359604db990288a1)
       '@expo/config-plugins': 54.0.4
       '@expo/devtools': 0.1.8(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@expo/fingerprint': 0.15.5

@@ -1,0 +1,12 @@
+diff --git a/build/Config.js b/build/Config.js
+--- a/build/Config.js
++++ b/build/Config.js
+@@ -31,7 +31,7 @@
+   return data;
+ }
+ function _deepmerge() {
+-  const data = _interopRequireDefault(require("deepmerge"));
++  const data = _interopRequireDefault(require("deepmerge")({ symbols: true }));
+   _deepmerge = function () {
+     return data;
+   };
