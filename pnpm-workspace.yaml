@@ -3,3 +3,6 @@ packages:
 
 minimumReleaseAge: 10080
 blockExoticSubdeps: true
+
+minimumReleaseAgeExclude:
+  - node-forge@1.4.3
