@@ -16,7 +16,7 @@ It includes on-device speech recognition and a small in-memory send queue for th
 git clone https://github.com/tsilva/thunkd.git
 cd thunkd
 pnpm install
-EXPO_PUBLIC_USE_MOCK_SERVICES=1 keyenv run -- pnpm start
+EXPO_PUBLIC_USE_MOCK_SERVICES=1 pnpm start
 ```
 
 Scan the Expo QR code with Expo Go, or press `i`, `a`, or `w` in the Expo terminal to open iOS, Android, or web.
@@ -29,7 +29,6 @@ The Google Cloud helper remains available for project and client-ID setup:
 
 Do not add an OAuth client secret to `.env` or any `EXPO_PUBLIC_*` variable. See [Google Cloud Setup](docs/google-cloud-setup.md) for the current mock-development path and the server-side requirement for restoring live auth.
 
-Private local values declared in `.keyenv.toml` live in macOS Keychain. Check them with `keyenv doctor` and launch commands through `keyenv run -- ...`; application code continues to read normal environment variables.
 
 ## Commands
 
