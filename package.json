@@ -16,7 +16,7 @@
     "@expo/vector-icons": "^15.0.3",
     "@react-native-google-signin/google-signin": "^16.1.2",
     "expo": "~54.0.0",
-    "expo-constants": "~18.0.13",
+    "expo-constants": "~18.0.14",
     "expo-dev-client": "~6.0.20",
     "expo-keep-awake": "~15.0.8",
     "expo-linking": "~8.0.11",
